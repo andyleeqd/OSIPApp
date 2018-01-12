@@ -1,0 +1,2649 @@
+<!DOCTYPE NoteCase-File>
+<!--LastNote:10-->
+<HTML>
+<HEAD>
+<meta content="text/html;charset=UTF-8" http-equiv="Content-Type">
+<meta name="generator" content="NoteCase 1.9.8">
+<TITLE></TITLE>
+</HEAD>
+<BODY>
+<DL>
+<DT>C#研究代码</DT>
+<!--property:date_created=1515136331-->
+<!--property:date_modified=1515136331-->
+<DD>
+<DL>
+<DT>开关机</DT>
+<!--property:date_created=1515136346-->
+<!--property:date_modified=1515136858-->
+<DD>
+// 程序开机自动启动<BR>
+void autostart()<BR>
+{<BR>
+    HKEY hKey;<BR>
+    QString strRegPath = &quot;SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run&quot;;<BR>
+<BR>
+    //1、找到系统的启动项  <BR>
+    if (RegOpenKeyEx(HKEY_CURRENT_USER, strRegPath.toStdString().c_str(), 0, KEY_ALL_ACCESS, &amp;hKey) == ERROR_SUCCESS) ///打开启动项       <BR>
+    {<BR>
+        //2、得到本程序自身的全路径<BR>
+        TCHAR strExeFullDir[MAX_PATH];<BR>
+        GetModuleFileName(NULL, strExeFullDir, MAX_PATH);<BR>
+<BR>
+        //3、判断注册表项是否已经存在<BR>
+        TCHAR strDir[MAX_PATH] = {};<BR>
+        DWORD nLength = MAX_PATH;<BR>
+        long result = RegGetValue(hKey, nullptr, &quot;GISRestart&quot;, RRF_RT_REG_SZ, 0, strDir, &amp;nLength);<BR>
+<BR>
+        //4、已经存在<BR>
+        if (result != ERROR_SUCCESS || _tcscmp(strExeFullDir, strDir) != 0)<BR>
+        {<BR>
+            //5、添加一个子Key,并设置值，&quot;GISRestart&quot;是应用程序名字（不加后缀.exe） <BR>
+            RegSetValueEx(hKey, &quot;GISRestart&quot;, 0, REG_SZ, (LPBYTE)strExeFullDir, (lstrlen(strExeFullDir) + 1)*sizeof(TCHAR));<BR>
+<BR>
+            //6、关闭注册表<BR>
+            RegCloseKey(hKey);<BR>
+        }<BR>
+    }<BR>
+    else<BR>
+    {<BR>
+        QMessageBox::warning(0, QString::fromLocal8Bit(&quot;警告&quot;), QString::fromLocal8Bit(&quot;\n系统参数错误,不能随系统启动n&quot;));<BR>
+    }<BR>
+}<BR>
+<BR>
+// 取消开机自动启动<BR>
+void SGISRestartDlg::cancelAutoStart()<BR>
+{<BR>
+    HKEY hKey;<BR>
+    QString strRegPath = &quot;SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run&quot;;<BR>
+<BR>
+    //1、找到系统的启动项  <BR>
+    if (RegOpenKeyEx(HKEY_CURRENT_USER, strRegPath.toStdString().c_str(), 0, KEY_ALL_ACCESS, &amp;hKey) == ERROR_SUCCESS)<BR>
+    {<BR>
+        //2、删除值<BR>
+        RegDeleteValue(hKey, &quot;GISRestart&quot;);<BR>
+<BR>
+        //3、关闭注册表<BR>
+        RegCloseKey(hKey);<BR>
+    }<BR>
+}<BR>
+<BR>
+<BR>
+//定时关机<BR>
+Process p = new Process();<BR>
+           p.StartInfo.FileName = &quot;cmd.exe &quot;;<BR>
+           p.StartInfo.UseShellExecute = false;<BR>
+           p.StartInfo.RedirectStandardInput = true;<BR>
+           p.StartInfo.RedirectStandardOutput = true;<BR>
+           p.StartInfo.RedirectStandardError = true;<BR>
+           p.StartInfo.CreateNoWindow = true;<BR>
+           p.Start();<BR>
+           p.StandardInput.WriteLine(&quot;at time shutdown -s&quot;);   //填CMD命令<BR>
+           p.StandardInput.WriteLine(&quot;exit &quot;);<BR>
+           string strRst = p.StandardOutput.ReadToEnd();<BR>
+           MessageBox.Show(strRst);<BR>
+           p.WaitForExit();<BR>
+<BR>
+<BR>
+//定时关机<BR>
+ProcessStartInfo psi = new ProcessStartInfo(&quot;shutdown&quot;, &quot;/s /t 300 /c 关机了&quot;);<BR>
+Process.Start(psi);<BR>
+<BR>
+//定时开机<BR>
+[DllImport(&quot;kernel32.dll&quot;)]<BR>
+    public static extern SafeWaitHandle CreateWaitableTimer(IntPtr lpTimerAttributes, bool bManualReset, string lpTimerName);<BR>
+<BR>
+    [DllImport(&quot;kernel32.dll&quot;, SetLastError = true)]<BR>
+    [return: MarshalAs(UnmanagedType.Bool)]<BR>
+    public static extern bool SetWaitableTimer(SafeWaitHandle hTimer, [In] ref long pDueTime, int lPeriod, IntPtr pfnCompletionRoutine, IntPtr lpArgToCompletionRoutine, bool fResume);<BR>
+    /// &lt;summary&gt;<BR>
+    /// 设置唤醒时间<BR>
+    /// &lt;/summary&gt;<BR>
+    private void SetWaitForWakeUpTime(DateTime OnTime)<BR>
+    {<BR>
+      DateTime utc = OnTime;<BR>
+      long duetime = utc.ToFileTime();<BR>
+            using (SafeWaitHandle handle = CreateWaitableTimer(IntPtr.Zero, true, &quot;MyWaitabletimer&quot;))<BR>
+      {<BR>
+        if (SetWaitableTimer(handle, ref duetime, 0, IntPtr.Zero, IntPtr.Zero, true))<BR>
+        {<BR>
+          using (EventWaitHandle wh = new EventWaitHandle(false, EventResetMode.AutoReset))<BR>
+          {<BR>
+            wh.SafeWaitHandle = handle;<BR>
+            Application.SetSuspendState(PowerState.Hibernate, true, false);<BR>
+            wh.WaitOne();<BR>
+          }<BR>
+        }<BR>
+        else<BR>
+        {<BR>
+          throw new Win32Exception(Marshal.GetLastWin32Error());<BR>
+        }<BR>
+      }<BR>
+<BR>
+    }<BR>
+
+</DD>
+</DL>
+
+</DD>
+<DT>pjsip</DT>
+<!--property:date_created=1515478068-->
+<!--property:date_modified=1515727977-->
+<DD>
+     今天抽空写下以GB28181的方式获取摄像机视频流以备后用，同时也希望能帮助到正着手开发GB28181对接视频的同学，这块的资料实在不多。<BR>
+<BR>
+今天讲的内容不涉及到平台对接，平台对接下次有时间再讲，平台对接相对更麻烦点。通过GB28181获取摄像机视频流，首先需要摄像机支持GB28181<BR>
+<BR>
+，如何知道摄像机是否支持GB28181协议呢？请看下图：<BR>
+<BR>
+<BR>
+<BR>
+                                                            图1.摄像机28181协议配置图<BR>
+<BR>
+图1 展示了海康摄像机配置GB28181页面，其他厂家摄像机GB28181配置页面（我遇到的）基本跟海康配置的页面相同。<BR>
+<BR>
+下面介绍下各配置项基本意义：<BR>
+<BR>
+   本地端口：默认为5060，SIP服务发送命令给摄像机时需要知道摄像机GB28181端口号，要不向哪发？<BR>
+<BR>
+SIP服务器ID:说简单就是 服务器的标识，只不过这个标识有一定的要求，具体请参见28181-2001标准安全防范视频监控联网系统信息传输交换控制技术要求.pdf<BR>
+<BR>
+                    当然也可以参考新点的文档，新旧文档这部分差异不大。文档在从群里下载。<BR>
+<BR>
+SIP服务域：实际就是SIP服务器ID前10位。<BR>
+<BR>
+SIP服务器地址：SIP服务所在机器的IP地址（如果存在多网卡建议将不用的网卡禁用掉）。<BR>
+<BR>
+SIP服务器端口：SIP服务Port，其他SIP服务发送命令到此端口与之通信。<BR>
+<BR>
+其他的配置默认即可。<BR>
+<BR>
+   GB28181配置好以后，需要启动摄像机GB28181服务。<BR>
+<BR>
+启动摄像机GB28181的方法是勾选“启用”选项，启动成功后，摄像机会向SIP Server发送注册消息，通过抓包可以看到具体的注册消息内容：<BR>
+<BR>
+<BR>
+<BR>
+                            图2 摄像机发送注册消息图<BR>
+<BR>
+看下注册消息的具体内容：<BR>
+<BR>
+<BR>
+<BR>
+                                       图3 具体注册消息图<BR>
+<BR>
+重要是是Cantact信息，包含了摄像机GB28181 SIP ID 以及IP地址和端口号，这样与摄像机通信的SIP服务就知道往哪里回应答消息。<BR>
+<BR>
+     摄像机端基本介绍了完了（摄像机端相当于SIP Client），下面 介绍CG28181 服务端也即 SIP Server,这正是我们要实现的。<BR>
+<BR>
+实现CG28181服务端可以借助于现有的开源库 PJSIP,自己实现开发量还是很大的,具体的实现步骤如下：<BR>
+<BR>
+一. 将PJSIP运行起来，毕竟人家是一个服务。只有运行以后才能接收客户端发来的消息。<BR>
+<BR>
+bool Init(std::string concat, int logLevel)<BR>
+{<BR>
+    this-&gt;concat = concat;<BR>
+    pj_log_set_level(logLevel);<BR>
+    auto status = pj_init();<BR>
+ <BR>
+    status = pjlib_util_init();<BR>
+ <BR>
+    pj_caching_pool_init(&amp;cachingPool, &amp;pj_pool_factory_default_policy, 0);<BR>
+ <BR>
+    status = pjsip_endpt_create(&amp;cachingPool.factory, nullptr, &amp;endPoint);<BR>
+                 <BR>
+    status = pjsip_tsx_layer_init_module(endPoint);<BR>
+ <BR>
+    status = pjsip_ua_init_module(endPoint, nullptr);<BR>
+ <BR>
+    pool = pj_pool_create(&amp;cachingPool.factory, &quot;proxyapp&quot;, 4000, 4000, nullptr);<BR>
+    auto pjStr =StrToPjstr(GetAddr());<BR>
+ <BR>
+    pj_sockaddr_in pjAddr;<BR>
+    pjAddr.sin_family = pj_AF_INET();<BR>
+    pj_inet_aton(&amp;pjStr, &amp;pjAddr.sin_addr);<BR>
+ <BR>
+    auto port = GetPort();<BR>
+    pjAddr.sin_port = pj_htons(static_cast&lt;pj_uint16_t&gt;(GetPort()));<BR>
+　　　　status = pjsip_udp_transport_start(endPoint, &amp;pjAddr, nullptr, 1, nullptr);<BR>
+      if (status != PJ_SUCCESS) return status;<BR>
+ <BR>
+      auto realm = StrToPjstr(GetLocalDomain());<BR>
+      return pjsip_auth_srv_init(pool, &amp;authentication, &amp;realm, lookup, 0) == PJ_SUCCESS ? true : false;<BR>
+         <BR>
+}<BR>
+　　以上是PJSip初始化的代码，需要将服务将要监听的端口传给PJSIP,这样服务就在监听的端口接收SIP 消息了。<BR>
+<BR>
+二. 应答注册消息<BR>
+<BR>
+     摄像机端发送来Register消息后，如过服务端不应答，摄像机端会一直发送直到收到服务端应答为止。如果服务器端重新运行，需要手动再次<BR>
+<BR>
+开启摄像机，如果等摄像机自己再次发送注册消息可能是一个小时以后，我们当然不希望那么久。<BR>
+<BR>
+服务端应答注册消息代码<BR>
+bool OnReceive(pjsip_rx_data* rdata) override<BR>
+{<BR>
+    if(rdata-&gt;msg_info.cseq-&gt;method.id == PJSIP_REGISTER_METHOD)<BR>
+    {<BR>
+    　　auto expires = static_cast&lt;pjsip_expires_hdr*&gt;(pjsip_msg_find_hdr(rdata-&gt;msg_info.msg, PJSIP_H_EXPIRES, nullptr));<BR>
+    　　auto authHdr = static_cast&lt;pjsip_authorization_hdr*&gt;(pjsip_msg_find_hdr(rdata-&gt;msg_info.msg, PJSIP_H_AUTHORIZATION, nullptr));<BR>
+    　　if(expires &amp;&amp; expires-&gt;ivalue &gt; 0 )<BR>
+    　　{<BR>
+        if(authHdr)<BR>
+        {<BR>
+        　　cout &lt;&lt;&quot;receive register info&quot;&lt;&lt;endl;<BR>
+        　　response(rdata, PJSIP_SC_OK, DateHead);<BR>
+        　　QureryDeviceInfo(rdata);<BR>
+        }<BR>
+        else<BR>
+        {<BR>
+        　　response(rdata, PJSIP_SC_UNAUTHORIZED, AuthenHead);<BR>
+        }<BR>
+        return true;<BR>
+    　　}<BR>
+    }<BR>
+    return false;<BR>
+}<BR>
+　　<BR>
+OnReceive 是服务端接收注册消息以后的响应方法，也就是说要将OnReceive作为入参传给PJSIP,完成此项功能在初始化&lt;br data-filtered=&quot;filtered&quot;&gt;PJSIP Moudle时。至于PJSIP moudle，<BR>
+这里不多解释，想要知道细节的话，可以查看PJSIP文档，文档群里有，<BR>
+代码如下：<BR>
+bool  Init(std::string concat, int loglevel)<BR>
+{<BR>
+　　bool ret = false;<BR>
+  if(!mainModule)<BR>
+　{<BR>
+    ret = context.Init(concat,loglevel);<BR>
+    if(!ret) return ret;<BR>
+ <BR>
+    static struct pjsip_module moudle =<BR>
+    {<BR>
+    　　nullptr, nullptr,<BR>
+      { &quot;MainModule&quot;, 10 },<BR>
+      -1,<BR>
+     PJSIP_MOD_PRIORITY_APPLICATION,<BR>
+     nullptr,<BR>
+     nullptr,<BR>
+     nullptr,<BR>
+     nullptr,<BR>
+    nullptr,<BR>
+    &amp;CGSipMedia::OnReceive,<BR>
+    nullptr,<BR>
+    nullptr,<BR>
+    nullptr,<BR>
+    };<BR>
+    mainModule = &amp;moudle;<BR>
+    pjsip_inv_callback callback;<BR>
+    pj_bzero(&amp;callback, sizeof(callback));<BR>
+    callback.on_state_changed = &amp;onStateChanged;<BR>
+    callback.on_new_session = &amp;onNewSession;<BR>
+    callback.on_tsx_state_changed = &amp;onTsxStateChanged;<BR>
+    callback.on_rx_offer = &amp;onRxOffer;<BR>
+    callback.on_rx_reinvite = &amp;onRxReinvite;<BR>
+    callback.on_create_offer = &amp;onCreateOffer;<BR>
+    callback.on_send_ack = &amp;onSendAck;<BR>
+    ret = context.RegisterCallback(&amp;callback);<BR>
+    if(!ret ) return ret;<BR>
+ <BR>
+    context.InitModule();<BR>
+    ret  = context.RegisterModule(mainModule);<BR>
+    if(!ret ) return ret;<BR>
+ <BR>
+    CGSipModule::GetInstance().Init();<BR>
+    ret = context.CreateWorkThread(&amp;proc,workthread,nullptr,&quot;proxy&quot;);<BR>
+    }<BR>
+    return ret;<BR>
+    }<BR>
+　<BR>
+<BR>
+OnReceive方法内Resonse方法实现了发送响应数据到客户端（摄像机）:<BR>
+ void Response(pjsip_rx_data* rdata, int st_code,int headType) <BR>
+ {<BR>
+  　　std::lock_guard&lt;mutex&gt; lk(lock);<BR>
+     pjsip_tx_data* tdata;<BR>
+   　pjsip_endpt_create_response(endPoint, rdata, st_code, nullptr, &amp;tdata);<BR>
+     auto date = DateTimeFormatter::format(LocalDateTime(), &quot;%Y-%m-%dT%H:%M:%S&quot;);<BR>
+     pj_str_t c;<BR>
+     pj_str_t key;<BR>
+     pjsip_hdr *hdr;<BR>
+     switch(headType)<BR>
+      {<BR>
+           case DateHead:                                                        <BR>
+           　　key = pj_str(&quot;Date&quot;);<BR>
+           　　hdr = reinterpret_cast&lt;pjsip_hdr*&gt;(pjsip_date_hdr_create(pool, &amp;key, pj_cstr(&amp;c, date.c_str())));<BR>
+          　　 pjsip_msg_add_hdr(tdata-&gt;msg, hdr);<BR>
+          　　 break;<BR>
+           case AuthenHead:<BR>
+           　　pjsip_auth_srv_challenge(&amp;authentication, nullptr, nullptr, nullptr, PJ_FALSE, tdata);<BR>
+           　　break;<BR>
+              default:<BR>
+               break;<BR>
+       }<BR>
+      pjsip_response_addr addr;<BR>
+      pjsip_get_response_addr(pool, rdata, &amp;addr);<BR>
+      pjsip_endpt_send_response(endPoint, &amp;addr, tdata, nullptr, nullptr);<BR>
+   }<BR>
+<BR>
+<BR>
+实际也就是利用发PJSIP发送一些字符串给客户端。具体发送了些什么，可以抓个包看下。<BR>
+<BR>
+<BR>
+<BR>
+图4 SIP服务应答注册消息<BR>
+<BR>
+SIP 服务实际回了“200 OK” 给摄像机端。看下具体的消息内容：<BR>
+<BR>
+<BR>
+<BR>
+                                  图5  “200 OK” 具体内容<BR>
+<BR>
+      SIP服务端响应注册命令后，发送Invite请求，请求catalog信息，也就是设备基本信息，具体的方法上面已<BR>
+<BR>
+给出具体的内容是：<BR>
+<BR>
+void QueryDeviveInfo(GBDevice *device, const string&amp; scheme = &quot;Catalog&quot;)<BR>
+{<BR>
+　　char szQuerInfo[200] = { 0 };<BR>
+　　pj_ansi_snprintf(szQuerInfo, 200,<BR>
+   &quot;&lt;?xml version=\&quot;1.0\&quot; encoding=\&quot;UTF-8\&quot;?&gt;\n&quot;<BR>
+   &quot;&lt;Query&gt;\n&quot;<BR>
+  &quot;&lt;CmdType&gt;%s&lt;/CmdType&gt;\n&quot;<BR>
+  &quot;&lt;SN&gt;17430&lt;/SN&gt;\n&quot;<BR>
+  &quot;&lt;DeviceID&gt;%s&lt;/DeviceID&gt;\n&quot;<BR>
+  &quot;&lt;/Query&gt;\n&quot;, scheme.c_str(), device-&gt;GetUser()<BR>
+  );<BR>
+　　pjsip_tx_data *tdata;<BR>
+　　const pjsip_method method = { PJSIP_OTHER_METHOD,{ &quot;MESSAGE&quot;, 7 } };<BR>
+　　auto text = StrToPjstr(string(szQuerInfo));<BR>
+　　pjsip_endpt_create_request(endPoint, &amp;method, &amp;StrToPjstr(device-&gt;GetSipIpUrl()), &amp;StrToPjstr(concat), &amp;StrToPjstr(device-&gt;GetSipCodecUrl()),&amp;StrToPjstr(concat), nullptr, -1, &amp;text, &amp;tdata);<BR>
+　　tdata-&gt;msg-&gt;body-&gt;content_type.type = pj_str(&quot;Application&quot;);<BR>
+　　tdata-&gt;msg-&gt;body-&gt;content_type.subtype = pj_str(&quot;MANSCDP+xml&quot;);<BR>
+　　pjsip_endpt_send_request(endPoint, tdata, -1, nullptr, nullptr);&lt;br data-filtered=&quot;filtered&quot;&gt;}<BR>
+　<BR>
+<BR>
+SIP服务端 发送了请求catalog  消息，摄像机端收到消息发送其自身的catalog消息，SIP 服务端将在OnReceive中收到具体的catalog消息。取catalog消息的方法如下：<BR>
+<BR>
+bool OnReceive(pjsip_rx_data* rdata) override<BR>
+{<BR>
+　　if (rdata-&gt;msg_info.cseq-&gt;method.id == PJSIP_OTHER_METHOD)<BR>
+　　{<BR>
+    CGXmlParser xmlParser(context.GetMessageBody(rdata));<BR>
+    CGDynamicStruct dynamicStruct;<BR>
+    dynamicStruct.Set(xmlParser.GetXml());<BR>
+ <BR>
+    auto cmd = xmlParser.GetXml()-&gt;firstChild()-&gt;nodeName();<BR>
+    auto cmdType = dynamicStruct.Get&lt;std::string&gt;(&quot;CmdType&quot;);<BR>
+    if (cmdType != &quot;Catalog&quot;) return false;<BR>
+             <BR>
+    auto DeviceID = dynamicStruct.Get&lt;std::string&gt;(&quot;DeviceID&quot;);<BR>
+                 <BR>
+    Vector deviceList = dynamicStruct.Get&lt;Vector&gt;(&quot;DeviceList&quot;);<BR>
+ <BR>
+    for (auto&amp; x : deviceList)<BR>
+    {<BR>
+    　　CGCatalogInfo devinfo;<BR>
+    try<BR>
+    {<BR>
+    　　devinfo.PlatformAddr = rdata-&gt;pkt_info.src_name;<BR>
+    　　devinfo.PlatformPort = rdata-&gt;pkt_info.src_port;<BR>
+ <BR>
+    　　devinfo.Address = x[&quot;Address&quot;].convert&lt;string&gt;();<BR>
+    　　devinfo.Name = WstringToString(x[&quot;Name&quot;].convert&lt;wstring&gt;());<BR>
+    　　devinfo.Manufacturer = x[&quot;Manufacturer&quot;].convert&lt;string&gt;();<BR>
+    　　devinfo.Model = x[&quot;Model&quot;].convert&lt;string&gt;();<BR>
+    　　devinfo.Owner = x[&quot;Owner&quot;].convert&lt;string&gt;();<BR>
+    　　devinfo.Civilcode = x[&quot;CivilCode&quot;].convert&lt;string&gt;();<BR>
+    　　devinfo.Registerway = x[&quot;RegisterWay&quot;].convert&lt;int&gt;();<BR>
+    　　devinfo.Secrecy = x[&quot;Secrecy&quot;].convert&lt;int&gt;();<BR>
+    　　//devinfo.IPAddress = x[&quot;IPAddress&quot;].convert&lt;string&gt;();<BR>
+    　　devinfo.DeviceID = x[&quot;DeviceID&quot;].convert&lt;string&gt;();<BR>
+    　　devinfo.Status= x[&quot;Status&quot;].convert&lt;string&gt;();<BR>
+    }<BR>
+    catch (...)<BR>
+    {<BR>
+        //continue;<BR>
+    }<BR>
+    if(callback)<BR>
+    {<BR>
+        callback(user, &amp;devinfo);<BR>
+    }<BR>
+    //SipControlModule::GetInstance().CatalogCallBack(devinfo);<BR>
+    }<BR>
+         <BR>
+    response(rdata, PJSIP_SC_OK,NoHead);<BR>
+    return true;<BR>
+　　SIP服务取都摄像机的信息后就可以发送请求视频信息了，请求视频最为关键的是SDP，下面看下SDP信息如何填写:<BR>
+<BR>
+static string createSDP(MediaContext&amp; mediaContext)<BR>
+{<BR>
+    char str[500] = { 0 };<BR>
+    pj_ansi_snprintf(str, 500,<BR>
+    &quot;v=0\n&quot;<BR>
+    &quot;o=%s 0 0 IN IP4 %s\n&quot;<BR>
+    &quot;s=Play\n&quot;<BR>
+    &quot;c=IN IP4 %s\n&quot;<BR>
+    &quot;t=0 0\n&quot;<BR>
+    &quot;m=video %d RTP/AVP 96 98 97\n&quot;<BR>
+    &quot;a=recvonly\n&quot;<BR>
+    &quot;a=rtpmap:96 PS/90000\n&quot;<BR>
+    &quot;a=rtpmap:98 H264/90000\n&quot;<BR>
+    &quot;a=rtpmap:97 MPEG4/90000\n&quot;<BR>
+    &quot;y=0100000001\n&quot;,<BR>
+    mediaContext.GetDeviceId().c_str(),<BR>
+    mediaContext.GetRecvAddress().c_str(),<BR>
+    mediaContext.GetRecvAddress().c_str(),<BR>
+    mediaContext.GetRecvPort()<BR>
+            );<BR>
+    return str;<BR>
+}<BR>
+　　发送请求视频命令到摄像机端当然也是通过PJSIP API实现代码如下：<BR>
+bool Invite(pjsip_dialog *dlg, MediaContext mediaContext, string sdp)<BR>
+{<BR>
+    pjsip_inv_session *inv;<BR>
+    if (PJ_SUCCESS != pjsip_inv_create_uac(dlg, nullptr, 0, &amp;inv)) return false;<BR>
+    pjsip_tx_data *tdata;<BR>
+    if (PJ_SUCCESS != pjsip_inv_invite(inv, &amp;tdata)) return false;<BR>
+    pjsip_media_type type;<BR>
+    type.type = pj_str(&quot;application&quot;);<BR>
+    type.subtype = pj_str(&quot;sdp&quot;);<BR>
+    auto text = pj_str(const_cast&lt;char *&gt;(sdp.c_str()));<BR>
+    try<BR>
+    {<BR>
+        tdata-&gt;msg-&gt;body = pjsip_msg_body_create(pool, &amp;type.type, &amp;type.subtype, &amp;text);<BR>
+ <BR>
+        auto hName = pj_str(&quot;Subject&quot;);<BR>
+        auto subjectUrl = mediaContext.GetDeviceId() + &quot;:&quot; + SiralNum + &quot;,&quot; + GetInstance().GetCode() + &quot;:&quot; + SiralNum;<BR>
+        auto hValue = pj_str(const_cast&lt;char*&gt;(subjectUrl.c_str()));<BR>
+        auto hdr = pjsip_generic_string_hdr_create(pool, &amp;hName, &amp;hValue);<BR>
+        pjsip_msg_add_hdr(tdata-&gt;msg, reinterpret_cast&lt;pjsip_hdr*&gt;(hdr));<BR>
+        pjsip_inv_send_msg(inv, tdata);<BR>
+    }<BR>
+    catch (...)<BR>
+    {<BR>
+    }<BR>
+    return true;<BR>
+}<BR>
+　　代码就不解释了，要想知道到底发了什么还是抓个包看看，无论你用什么方法只要抓包的数据是正确定说明发送成功了。<BR>
+<BR>
+<BR>
+<BR>
+                                                图6 服务端发送invite视频消息<BR>
+<BR>
+摄像机端收到Invite请求后，会将视频数据以rtp的方式推送到指定的端口，端口在invite消息指定。<BR>
+<BR>
+这样在指定的地址（ip + port）就可以拿到数据了。<BR>
+<BR>
+最后提供一个测试demo，demo的作用是可以让大家抓包，看看双方都发了些什么。<BR>
+<BR>
+demo运行界面如下：<BR>
+<BR>
+<BR>
+<BR>
+                                                                             图6 demo运行初始界面<BR>
+<BR>
+1.运行demo后，首先配置好配置，如果不知道可以默认，但IP地址需要修改，端口不能被占用。<BR>
+<BR>
+2.完成配置各配置项以后点击获取视频源按钮 等待摄像机端注册。<BR>
+<BR>
+3.摄像机端开启28181功能：具体的方法可以是：平台选择方式下拉框先选择一个非28181方式，点击保存，再选择28181方式并点击保存。<BR>
+<BR>
+4.摄像机端成功开启28181功能以后，视频源下拉框中会显示摄像机的名称信息。<BR>
+<BR>
+5.选中视频源下拉框中出现的选项并点击播放按钮，正常情况下会可以播放从摄像机端过来的视频流。<BR>
+<BR>
+   成功接入视频源并播放的运行界面如下。<DL>
+<DT>code</DT>
+<!--property:date_created=1515478081-->
+<!--property:date_modified=1515566957-->
+<DD>
+//初始化pjsip服务<BR>
+bool Init(std::string concat, int logLevel)<BR>
+{<BR>
+    this-&gt;concat = concat;<BR>
+    pj_log_set_level(logLevel);<BR>
+    auto status = pj_init();<BR>
+ <BR>
+    status = pjlib_util_init();<BR>
+ <BR>
+    pj_caching_pool_init(&amp;cachingPool, &amp;pj_pool_factory_default_policy, 0);<BR>
+ <BR>
+    status = pjsip_endpt_create(&amp;cachingPool.factory, nullptr, &amp;endPoint);<BR>
+                 <BR>
+    status = pjsip_tsx_layer_init_module(endPoint);<BR>
+ <BR>
+    status = pjsip_ua_init_module(endPoint, nullptr);<BR>
+ <BR>
+    pool = pj_pool_create(&amp;cachingPool.factory, &quot;proxyapp&quot;, 4000, 4000, nullptr);<BR>
+    auto pjStr =StrToPjstr(GetAddr());<BR>
+ <BR>
+    pj_sockaddr_in pjAddr;<BR>
+    pjAddr.sin_family = pj_AF_INET();<BR>
+    pj_inet_aton(&amp;pjStr, &amp;pjAddr.sin_addr);<BR>
+ <BR>
+    auto port = GetPort();<BR>
+    pjAddr.sin_port = pj_htons(static_cast&lt;pj_uint16_t&gt;(GetPort()));<BR>
+　　　　status = pjsip_udp_transport_start(endPoint, &amp;pjAddr, nullptr, 1, nullptr);<BR>
+      if (status != PJ_SUCCESS) return status;<BR>
+ <BR>
+      auto realm = StrToPjstr(GetLocalDomain());<BR>
+      return pjsip_auth_srv_init(pool, &amp;authentication, &amp;realm, lookup, 0) == PJ_SUCCESS ? true : false;<BR>
+         <BR>
+}<BR>
+<BR>
+//摄像机发送注册消息，服务器返回应答消息<BR>
+bool OnReceive(pjsip_rx_data* rdata) override<BR>
+{<BR>
+    if(rdata-&gt;msg_info.cseq-&gt;method.id == PJSIP_REGISTER_METHOD)<BR>
+    {<BR>
+    　　auto expires = static_cast&lt;pjsip_expires_hdr*&gt;(pjsip_msg_find_hdr(rdata-&gt;msg_info.msg, PJSIP_H_EXPIRES, nullptr));<BR>
+    　　auto authHdr = static_cast&lt;pjsip_authorization_hdr*&gt;(pjsip_msg_find_hdr(rdata-&gt;msg_info.msg, PJSIP_H_AUTHORIZATION, nullptr));<BR>
+    　　if(expires &amp;&amp; expires-&gt;ivalue &gt; 0 )<BR>
+    　　{<BR>
+        if(authHdr)<BR>
+        {<BR>
+        　　cout &lt;&lt;&quot;receive register info&quot;&lt;&lt;endl;<BR>
+        　　response(rdata, PJSIP_SC_OK, DateHead);<BR>
+        　　QureryDeviceInfo(rdata);<BR>
+        }<BR>
+        else<BR>
+        {<BR>
+        　　response(rdata, PJSIP_SC_UNAUTHORIZED, AuthenHead);<BR>
+        }<BR>
+        return true;<BR>
+    　　}<BR>
+    }<BR>
+    return false;<BR>
+}<BR>
+<BR>
+<BR>
+//上面的回答消息要作为参数传给pjsip服务器<BR>
+bool  Init(std::string concat, int loglevel)<BR>
+{<BR>
+　　bool ret = false;<BR>
+  if(!mainModule)<BR>
+　{<BR>
+    ret = context.Init(concat,loglevel);<BR>
+    if(!ret) return ret;<BR>
+ <BR>
+    static struct pjsip_module moudle =<BR>
+    {<BR>
+    　　nullptr, nullptr,<BR>
+      { &quot;MainModule&quot;, 10 },<BR>
+      -1,<BR>
+     PJSIP_MOD_PRIORITY_APPLICATION,<BR>
+     nullptr,<BR>
+     nullptr,<BR>
+     nullptr,<BR>
+     nullptr,<BR>
+    nullptr,<BR>
+    &amp;CGSipMedia::OnReceive,<BR>
+    nullptr,<BR>
+    nullptr,<BR>
+    nullptr,<BR>
+    };<BR>
+    mainModule = &amp;moudle;<BR>
+    pjsip_inv_callback callback;<BR>
+    pj_bzero(&amp;callback, sizeof(callback));<BR>
+    callback.on_state_changed = &amp;onStateChanged;<BR>
+    callback.on_new_session = &amp;onNewSession;<BR>
+    callback.on_tsx_state_changed = &amp;onTsxStateChanged;<BR>
+    callback.on_rx_offer = &amp;onRxOffer;<BR>
+    callback.on_rx_reinvite = &amp;onRxReinvite;<BR>
+    callback.on_create_offer = &amp;onCreateOffer;<BR>
+    callback.on_send_ack = &amp;onSendAck;<BR>
+    ret = context.RegisterCallback(&amp;callback);<BR>
+    if(!ret ) return ret;<BR>
+ <BR>
+    context.InitModule();<BR>
+    ret  = context.RegisterModule(mainModule);<BR>
+    if(!ret ) return ret;<BR>
+ <BR>
+    CGSipModule::GetInstance().Init();<BR>
+    ret = context.CreateWorkThread(&amp;proc,workthread,nullptr,&quot;proxy&quot;);<BR>
+    }<BR>
+    return ret;<BR>
+    }<BR>
+}<BR>
+<BR>
+OnReceive方法内Response方法实现了发送响应数据到客户端（摄像机）:<BR>
+void Response(pjsip_rx_data* rdata, int st_code,int headType) <BR>
+ {<BR>
+  　　std::lock_guard&lt;mutex&gt; lk(lock);<BR>
+     pjsip_tx_data* tdata;<BR>
+   　pjsip_endpt_create_response(endPoint, rdata, st_code, nullptr, &amp;tdata);<BR>
+     auto date = DateTimeFormatter::format(LocalDateTime(), &quot;%Y-%m-%dT%H:%M:%S&quot;);<BR>
+     pj_str_t c;<BR>
+     pj_str_t key;<BR>
+     pjsip_hdr *hdr;<BR>
+     switch(headType)<BR>
+      {<BR>
+           case DateHead:                                                        <BR>
+           　　key = pj_str(&quot;Date&quot;);<BR>
+           　　hdr = reinterpret_cast&lt;pjsip_hdr*&gt;(pjsip_date_hdr_create(pool, &amp;key, pj_cstr(&amp;c, date.c_str())));<BR>
+          　　 pjsip_msg_add_hdr(tdata-&gt;msg, hdr);<BR>
+          　　 break;<BR>
+           case AuthenHead:<BR>
+           　　pjsip_auth_srv_challenge(&amp;authentication, nullptr, nullptr, nullptr, PJ_FALSE, tdata);<BR>
+           　　break;<BR>
+              default:<BR>
+               break;<BR>
+       }<BR>
+      pjsip_response_addr addr;<BR>
+      pjsip_get_response_addr(pool, rdata, &amp;addr);<BR>
+      pjsip_endpt_send_response(endPoint, &amp;addr, tdata, nullptr, nullptr);<BR>
+   }<BR>
+<BR>
+<BR>
+//服务器请求catalog消息<BR>
+void QueryDeviveInfo(GBDevice *device, const string&amp; scheme = &quot;Catalog&quot;)<BR>
+{<BR>
+　　char szQuerInfo[200] = { 0 };<BR>
+　　pj_ansi_snprintf(szQuerInfo, 200,<BR>
+   &quot;&lt;?xml version=\&quot;1.0\&quot; encoding=\&quot;UTF-8\&quot;?&gt;\n&quot;<BR>
+   &quot;&lt;Query&gt;\n&quot;<BR>
+  &quot;&lt;CmdType&gt;%s&lt;/CmdType&gt;\n&quot;<BR>
+  &quot;&lt;SN&gt;17430&lt;/SN&gt;\n&quot;<BR>
+  &quot;&lt;DeviceID&gt;%s&lt;/DeviceID&gt;\n&quot;<BR>
+  &quot;&lt;/Query&gt;\n&quot;, scheme.c_str(), device-&gt;GetUser()<BR>
+  );<BR>
+　　pjsip_tx_data *tdata;<BR>
+　　const pjsip_method method = { PJSIP_OTHER_METHOD,{ &quot;MESSAGE&quot;, 7 } };<BR>
+　　auto text = StrToPjstr(string(szQuerInfo));<BR>
+　　pjsip_endpt_create_request(endPoint, &amp;method, &amp;StrToPjstr(device-&gt;GetSipIpUrl()), &amp;StrToPjstr(concat), &amp;StrToPjstr(device-&gt;GetSipCodecUrl()),&amp;StrToPjstr(concat), nullptr, -1, &amp;text, &amp;tdata);<BR>
+　　tdata-&gt;msg-&gt;body-&gt;content_type.type = pj_str(&quot;Application&quot;);<BR>
+　　tdata-&gt;msg-&gt;body-&gt;content_type.subtype = pj_str(&quot;MANSCDP+xml&quot;);<BR>
+　　pjsip_endpt_send_request(endPoint, tdata, -1, nullptr, nullptr);<BR>
+}<BR>
+<BR>
+//服务器接收摄像机传回的catalog消息<BR>
+bool OnReceive(pjsip_rx_data* rdata) override<BR>
+{<BR>
+　　if (rdata-&gt;msg_info.cseq-&gt;method.id == PJSIP_OTHER_METHOD)<BR>
+　　{<BR>
+    CGXmlParser xmlParser(context.GetMessageBody(rdata));<BR>
+    CGDynamicStruct dynamicStruct;<BR>
+    dynamicStruct.Set(xmlParser.GetXml());<BR>
+ <BR>
+    auto cmd = xmlParser.GetXml()-&gt;firstChild()-&gt;nodeName();<BR>
+    auto cmdType = dynamicStruct.Get&lt;std::string&gt;(&quot;CmdType&quot;);<BR>
+    if (cmdType != &quot;Catalog&quot;) return false;<BR>
+             <BR>
+    auto DeviceID = dynamicStruct.Get&lt;std::string&gt;(&quot;DeviceID&quot;);<BR>
+                 <BR>
+    Vector deviceList = dynamicStruct.Get&lt;Vector&gt;(&quot;DeviceList&quot;);<BR>
+ <BR>
+    for (auto&amp; x : deviceList)<BR>
+    {<BR>
+    　　CGCatalogInfo devinfo;<BR>
+    try<BR>
+    {<BR>
+    　　devinfo.PlatformAddr = rdata-&gt;pkt_info.src_name;<BR>
+    　　devinfo.PlatformPort = rdata-&gt;pkt_info.src_port;<BR>
+ <BR>
+    　　devinfo.Address = x[&quot;Address&quot;].convert&lt;string&gt;();<BR>
+    　　devinfo.Name = WstringToString(x[&quot;Name&quot;].convert&lt;wstring&gt;());<BR>
+    　　devinfo.Manufacturer = x[&quot;Manufacturer&quot;].convert&lt;string&gt;();<BR>
+    　　devinfo.Model = x[&quot;Model&quot;].convert&lt;string&gt;();<BR>
+    　　devinfo.Owner = x[&quot;Owner&quot;].convert&lt;string&gt;();<BR>
+    　　devinfo.Civilcode = x[&quot;CivilCode&quot;].convert&lt;string&gt;();<BR>
+    　　devinfo.Registerway = x[&quot;RegisterWay&quot;].convert&lt;int&gt;();<BR>
+    　　devinfo.Secrecy = x[&quot;Secrecy&quot;].convert&lt;int&gt;();<BR>
+    　　//devinfo.IPAddress = x[&quot;IPAddress&quot;].convert&lt;string&gt;();<BR>
+    　　devinfo.DeviceID = x[&quot;DeviceID&quot;].convert&lt;string&gt;();<BR>
+    　　devinfo.Status= x[&quot;Status&quot;].convert&lt;string&gt;();<BR>
+    }<BR>
+    catch (...)<BR>
+    {<BR>
+        //continue;<BR>
+    }<BR>
+    if(callback)<BR>
+    {<BR>
+        callback(user, &amp;devinfo);<BR>
+    }<BR>
+    //SipControlModule::GetInstance().CatalogCallBack(devinfo);<BR>
+    }<BR>
+         <BR>
+    response(rdata, PJSIP_SC_OK,NoHead);<BR>
+    return true;<BR>
+}<BR>
+<BR>
+//服务器接收到catalog消息后，解析摄像机信息，然后回执SDP，请求视频信息<BR>
+static string createSDP(MediaContext&amp; mediaContext)<BR>
+{<BR>
+    char str[500] = { 0 };<BR>
+    pj_ansi_snprintf(str, 500,<BR>
+    &quot;v=0\n&quot;<BR>
+    &quot;o=%s 0 0 IN IP4 %s\n&quot;<BR>
+    &quot;s=Play\n&quot;<BR>
+    &quot;c=IN IP4 %s\n&quot;<BR>
+    &quot;t=0 0\n&quot;<BR>
+    &quot;m=video %d RTP/AVP 96 98 97\n&quot;<BR>
+    &quot;a=recvonly\n&quot;<BR>
+    &quot;a=rtpmap:96 PS/90000\n&quot;<BR>
+    &quot;a=rtpmap:98 H264/90000\n&quot;<BR>
+    &quot;a=rtpmap:97 MPEG4/90000\n&quot;<BR>
+    &quot;y=0100000001\n&quot;,<BR>
+    mediaContext.GetDeviceId().c_str(),<BR>
+    mediaContext.GetRecvAddress().c_str(),<BR>
+    mediaContext.GetRecvAddress().c_str(),<BR>
+    mediaContext.GetRecvPort()<BR>
+            );<BR>
+    return str;<BR>
+}<BR>
+<BR>
+<BR>
+//请求视频函数<BR>
+bool Invite(pjsip_dialog *dlg, MediaContext mediaContext, string sdp)<BR>
+{<BR>
+    pjsip_inv_session *inv;<BR>
+    if (PJ_SUCCESS != pjsip_inv_create_uac(dlg, nullptr, 0, &amp;inv)) return false;<BR>
+    pjsip_tx_data *tdata;<BR>
+    if (PJ_SUCCESS != pjsip_inv_invite(inv, &amp;tdata)) return false;<BR>
+    pjsip_media_type type;<BR>
+    type.type = pj_str(&quot;application&quot;);<BR>
+    type.subtype = pj_str(&quot;sdp&quot;);<BR>
+    auto text = pj_str(const_cast&lt;char *&gt;(sdp.c_str()));<BR>
+    try<BR>
+    {<BR>
+        tdata-&gt;msg-&gt;body = pjsip_msg_body_create(pool, &amp;type.type, &amp;type.subtype, &amp;text);<BR>
+ <BR>
+        auto hName = pj_str(&quot;Subject&quot;);<BR>
+        auto subjectUrl = mediaContext.GetDeviceId() + &quot;:&quot; + SiralNum + &quot;,&quot; + GetInstance().GetCode() + &quot;:&quot; + SiralNum;<BR>
+        auto hValue = pj_str(const_cast&lt;char*&gt;(subjectUrl.c_str()));<BR>
+        auto hdr = pjsip_generic_string_hdr_create(pool, &amp;hName, &amp;hValue);<BR>
+        pjsip_msg_add_hdr(tdata-&gt;msg, reinterpret_cast&lt;pjsip_hdr*&gt;(hdr));<BR>
+        pjsip_inv_send_msg(inv, tdata);<BR>
+    }<BR>
+    catch (...)<BR>
+    {<BR>
+    }<BR>
+    return true;<BR>
+}<BR>
+<BR>
+//摄像机接收到请求信息后将视频以rtp的方式传输给指定----端口ip地址
+</DD>
+</DL>
+
+</DD>
+<DT>GB28181</DT>
+<!--property:date_created=1515740245-->
+<!--property:date_modified=1515740245-->
+<!--property:expanded-->
+<DD>
+<DL>
+<DT>平台接入</DT>
+<!--property:date_created=1515740253-->
+<!--property:date_modified=1515740259-->
+<DD>
+libosip+libexosip+libxml<BR>
+<BR>
+前面两者负责sip协议的实现，libxml用来封装和解析实体信令<BR>
+<BR>
+  流媒体方面：从编码中获取的h.264+g711的视音频帧，进行PS媒体协议封装（自己写的PS封装协议），再经过RTP传输协议（自己实现）发送至平台<BR>
+<BR>
+ 平台对收到的RTP流媒体进行解RTP,解PS，再进行h.264+g711的解码。<BR>
+<BR>
+<BR>
+opensips,pjproject,ffmpeg<BR>
+<BR>
+<BR>
+<BR>
+uac功能实现<BR>
+/*<BR>
+  2  ===============================================================<BR>
+  3  GBT28181 基于eXosip2,osip库实现注册UAC功能<BR>
+  4  作者：程序人生<BR>
+  5  博客地址：http://blog.csdn.net/hiwubihe<BR>
+  6  QQ：1269122125<BR>
+  7  注：请尊重原作者劳动成果，仅供学习使用，请勿盗用，违者必究！<BR>
+  8  ================================================================<BR>
+  9  */<BR>
+ 10 <BR>
+ 11 #include &lt;iostream&gt;<BR>
+ 12 #include &lt;string&gt;<BR>
+ 13 #include &lt;sstream&gt;<BR>
+ 14 #include &lt;osipparser2/osip_message.h&gt;<BR>
+ 15 #include &lt;osipparser2/osip_parser.h&gt;<BR>
+ 16 #include &lt;osipparser2/osip_port.h&gt;<BR>
+ 17 <BR>
+ 18 #include &lt;eXosip2/eXosip.h&gt;<BR>
+ 19 #include &lt;eXosip2/eX_setup.h&gt;<BR>
+ 20 #include &lt;eXosip2/eX_register.h&gt;<BR>
+ 21 #include &lt;eXosip2/eX_options.h&gt;<BR>
+ 22 #include &lt;eXosip2/eX_message.h&gt;<BR>
+ 23 #include &lt;arpa/inet.h&gt;<BR>
+ 24 #include &lt;sys/types.h&gt;<BR>
+ 25 #include &lt;sys/socket.h&gt;<BR>
+ 26 <BR>
+ 27 using namespace std;<BR>
+ 28 <BR>
+ 29 //本地监听IP<BR>
+ 30 #define LISTEN_ADDR (&quot;192.168.50.57&quot;)<BR>
+ 31 //本地监听端口<BR>
+ 32 #define UACPORT (&quot;5061&quot;)<BR>
+ 33 #define UACPORTINT (5061)<BR>
+ 34 //本UAC地址编码<BR>
+ 35 #define UACCODE (&quot;100110000201000000&quot;)<BR>
+ 36 //本地UAC密码<BR>
+ 37 #define UACPWD (&quot;12345&quot;)<BR>
+ 38 //远程UAS IP<BR>
+ 39 #define UAS_ADDR (&quot;192.168.50.57&quot;)<BR>
+ 40 //远程UAS 端口<BR>
+ 41 #define UAS_PORT (&quot;5060&quot;)<BR>
+ 42 //超时<BR>
+ 43 #define EXPIS 300<BR>
+ 44 <BR>
+ 45 //当前服务状态 1 已经注册 0 未注册<BR>
+ 46 static int iCurrentStatus;<BR>
+ 47 //注册成功HANDLE<BR>
+ 48 static int iHandle = -1;<BR>
+ 49 <BR>
+ 50 //SIP From/To 头部<BR>
+ 51 class CSipFromToHeader<BR>
+ 52 {<BR>
+ 53 public:<BR>
+ 54     CSipFromToHeader()<BR>
+ 55     {<BR>
+ 56     }<BR>
+ 57     ~CSipFromToHeader()<BR>
+ 58     {<BR>
+ 59     }<BR>
+ 60     void SetHeader(string addrCod, string addrI, string addrPor)<BR>
+ 61     {<BR>
+ 62         addrCode = addrCod;<BR>
+ 63         addrIp = addrI;<BR>
+ 64         addrPort = addrPor;<BR>
+ 65     }<BR>
+ 66     string GetFormatHeader()<BR>
+ 67     {<BR>
+ 68         std::stringstream stream;<BR>
+ 69         stream &lt;&lt; &quot;sip: &quot; &lt;&lt; addrCode &lt;&lt; &quot;@&quot; &lt;&lt; addrIp &lt;&lt; &quot;:&quot; &lt;&lt; addrPort;<BR>
+ 70         return stream.str();<BR>
+ 71     }<BR>
+ 72     //主机名称<BR>
+ 73     string GetCode()<BR>
+ 74     {<BR>
+ 75         std::stringstream stream;<BR>
+ 76         stream &lt;&lt; addrCode;<BR>
+ 77         return stream.str();<BR>
+ 78     }<BR>
+ 79     //主机地址<BR>
+ 80     string GetAddr()<BR>
+ 81     {<BR>
+ 82         std::stringstream stream;<BR>
+ 83         stream &lt;&lt; addrIp;<BR>
+ 84         return stream.str();<BR>
+ 85     }<BR>
+ 86     //端口<BR>
+ 87     string GetPort()<BR>
+ 88     {<BR>
+ 89         std::stringstream stream;<BR>
+ 90         stream &lt;&lt; addrPort;<BR>
+ 91         return stream.str();<BR>
+ 92     }<BR>
+ 93 <BR>
+ 94 private:<BR>
+ 95     string addrCode;<BR>
+ 96     string addrIp;<BR>
+ 97     string addrPort;<BR>
+ 98 };<BR>
+ 99 <BR>
+100 //SIP Contract头部<BR>
+101 class CContractHeader: public CSipFromToHeader<BR>
+102 {<BR>
+103 public:<BR>
+104     CContractHeader()<BR>
+105     {<BR>
+106     }<BR>
+107     ~CContractHeader()<BR>
+108     {<BR>
+109     }<BR>
+110     void SetContractHeader(string addrCod, string addrI, string addrPor)<BR>
+111     {<BR>
+112         SetHeader(addrCod, addrI, addrPor);<BR>
+113     }<BR>
+114     string GetContractFormatHeader()<BR>
+115     {<BR>
+116 <BR>
+117         std::stringstream stream;<BR>
+118         stream &lt;&lt; &quot;&lt;sip:&quot; &lt;&lt; GetCode() &lt;&lt; &quot;@&quot; &lt;&lt; GetAddr() &lt;&lt; &quot;:&quot; &lt;&lt; GetPort()<BR>
+119                 &lt;&lt; &quot;&gt;&quot;;<BR>
+120         return stream.str();<BR>
+121     }<BR>
+122 };<BR>
+123 <BR>
+124 //发送注册信息<BR>
+125 int SendRegister(int&amp; registerId, CSipFromToHeader &amp;from, CSipFromToHeader &amp;to,<BR>
+126         CContractHeader &amp;contact, const string&amp; userName, const string&amp; pwd,<BR>
+127         const int expires, int iType)<BR>
+128 {<BR>
+129     cout &lt;&lt; &quot;=============================================&quot; &lt;&lt; endl;<BR>
+130     if (iType == 0)<BR>
+131     {<BR>
+132         cout &lt;&lt; &quot;注册请求信息：&quot; &lt;&lt; endl;<BR>
+133     }<BR>
+134     else if (iType == 1)<BR>
+135     {<BR>
+136         cout &lt;&lt; &quot;刷新注册信息：&quot; &lt;&lt; endl;<BR>
+137     }<BR>
+138     else<BR>
+139     {<BR>
+140         cout &lt;&lt; &quot;注销信息:&quot; &lt;&lt; endl;<BR>
+141     }<BR>
+142     cout &lt;&lt; &quot;registerId &quot; &lt;&lt; registerId &lt;&lt; endl;<BR>
+143     cout &lt;&lt; &quot;from &quot; &lt;&lt; from.GetFormatHeader() &lt;&lt; endl;<BR>
+144     cout &lt;&lt; &quot;to &quot; &lt;&lt; to.GetFormatHeader() &lt;&lt; endl;<BR>
+145     cout &lt;&lt; &quot;contact&quot; &lt;&lt; contact.GetContractFormatHeader() &lt;&lt; endl;<BR>
+146     cout &lt;&lt; &quot;userName&quot; &lt;&lt; userName &lt;&lt; endl;<BR>
+147     cout &lt;&lt; &quot;pwd&quot; &lt;&lt; pwd &lt;&lt; endl;<BR>
+148     cout &lt;&lt; &quot;expires&quot; &lt;&lt; expires &lt;&lt; endl;<BR>
+149     cout &lt;&lt; &quot;=============================================&quot; &lt;&lt; endl;<BR>
+150     //服务器注册<BR>
+151     static osip_message_t *regMsg = 0;<BR>
+152     int ret;<BR>
+153 <BR>
+154     ::eXosip_add_authentication_info(userName.c_str(), userName.c_str(),<BR>
+155             pwd.c_str(), &quot;MD5&quot;, NULL);<BR>
+156     eXosip_lock();<BR>
+157     //发送注册信息 401响应由eXosip2库自动发送<BR>
+158     if (0 == registerId)<BR>
+159     {<BR>
+160         // 注册消息的初始化<BR>
+161         registerId = ::eXosip_register_build_initial_register(<BR>
+162                 from.GetFormatHeader().c_str(), to.GetFormatHeader().c_str(),<BR>
+163                 contact.GetContractFormatHeader().c_str(), expires, &amp;regMsg);<BR>
+164         if (registerId &lt;= 0)<BR>
+165         {<BR>
+166             return -1;<BR>
+167         }<BR>
+168     }<BR>
+169     else<BR>
+170     {<BR>
+171         // 构建注册消息<BR>
+172         ret = ::eXosip_register_build_register(registerId, expires, &amp;regMsg);<BR>
+173         if (ret != OSIP_SUCCESS)<BR>
+174         {<BR>
+175             return ret;<BR>
+176         }<BR>
+177         //添加注销原因<BR>
+178         if (expires == 0)<BR>
+179         {<BR>
+180             osip_contact_t *contact = NULL;<BR>
+181             char tmp[128];<BR>
+182 <BR>
+183             osip_message_get_contact(regMsg, 0, &amp;contact);<BR>
+184             {<BR>
+185                 sprintf(tmp, &quot;&lt;sip:%s@%s:%s&gt;;expires=0&quot;,<BR>
+186                         contact-&gt;url-&gt;username, contact-&gt;url-&gt;host,<BR>
+187                         contact-&gt;url-&gt;port);<BR>
+188             }<BR>
+189             //osip_contact_free(contact);<BR>
+190             //reset contact header<BR>
+191             osip_list_remove(&amp;regMsg-&gt;contacts, 0);<BR>
+192             osip_message_set_contact(regMsg, tmp);<BR>
+193             osip_message_set_header(regMsg, &quot;Logout-Reason&quot;, &quot;logout&quot;);<BR>
+194         }<BR>
+195     }<BR>
+196     // 发送注册消息<BR>
+197     ret = ::eXosip_register_send_register(registerId, regMsg);<BR>
+198     if (ret != OSIP_SUCCESS)<BR>
+199     {<BR>
+200         registerId = 0;<BR>
+201     }eXosip_unlock();<BR>
+202 <BR>
+203     return ret;<BR>
+204 }<BR>
+205 <BR>
+206 //注册<BR>
+207 void Register()<BR>
+208 {<BR>
+209     if (iCurrentStatus == 1)<BR>
+210     {<BR>
+211         cout &lt;&lt; &quot;当前已经注册&quot; &lt;&lt; endl;<BR>
+212         return;<BR>
+213     }<BR>
+214     CSipFromToHeader stFrom;<BR>
+215     stFrom.SetHeader(UACCODE, UAS_ADDR, UAS_PORT);<BR>
+216     CSipFromToHeader stTo;<BR>
+217     stTo.SetHeader(UACCODE, UAS_ADDR, UAS_PORT);<BR>
+218     CContractHeader stContract;<BR>
+219     stContract.SetContractHeader(UACCODE, LISTEN_ADDR, UACPORT);<BR>
+220     //发送注册信息<BR>
+221     int registerId = 0;<BR>
+222     if (0 &gt; SendRegister(registerId, stFrom, stTo, stContract, UACCODE, UACPWD,<BR>
+223             3000, 0))<BR>
+224     {<BR>
+225         cout &lt;&lt; &quot;发送注册失败&quot; &lt;&lt; endl;<BR>
+226         return;<BR>
+227     }<BR>
+228     iCurrentStatus = 1;<BR>
+229     iHandle = registerId;<BR>
+230 }<BR>
+231 //刷新注册<BR>
+232 void RefreshRegister()<BR>
+233 {<BR>
+234     if (iCurrentStatus == 0)<BR>
+235     {<BR>
+236         cout &lt;&lt; &quot;当前未注册，不允许刷新&quot; &lt;&lt; endl;<BR>
+237         return;<BR>
+238     }<BR>
+239     CSipFromToHeader stFrom;<BR>
+240     stFrom.SetHeader(UACCODE, UAS_ADDR, UAS_PORT);<BR>
+241     CSipFromToHeader stTo;<BR>
+242     stTo.SetHeader(UACCODE, UAS_ADDR, UAS_PORT);<BR>
+243     CContractHeader stContract;<BR>
+244     stContract.SetContractHeader(UACCODE, LISTEN_ADDR, UACPORT);<BR>
+245     //发送注册信息<BR>
+246     if (0 &gt; SendRegister(iHandle, stFrom, stTo, stContract, UACCODE, UACPWD,<BR>
+247             3000, 1))<BR>
+248     {<BR>
+249         cout &lt;&lt; &quot;发送刷新注册失败&quot; &lt;&lt; endl;<BR>
+250         return;<BR>
+251     }<BR>
+252 }<BR>
+253 //注销<BR>
+254 void UnRegister()<BR>
+255 {<BR>
+256     if (iCurrentStatus == 0)<BR>
+257     {<BR>
+258         cout &lt;&lt; &quot;当前未注册，不允许注销&quot; &lt;&lt; endl;<BR>
+259         return;<BR>
+260     }<BR>
+261     CSipFromToHeader stFrom;<BR>
+262     stFrom.SetHeader(UACCODE, UAS_ADDR, UAS_PORT);<BR>
+263     CSipFromToHeader stTo;<BR>
+264     stTo.SetHeader(UACCODE, UAS_ADDR, UAS_PORT);<BR>
+265     CContractHeader stContract;<BR>
+266     stContract.SetContractHeader(UACCODE, LISTEN_ADDR, UACPORT);<BR>
+267     //发送注册信息<BR>
+268269     if (0 &gt; SendRegister( iHandle, stFrom, stTo, stContract, UACCODE, UACPWD,<BR>
+270             0, 2))<BR>
+271     {<BR>
+272         cout &lt;&lt; &quot;发送注销失败&quot; &lt;&lt; endl;<BR>
+273         return;<BR>
+274     }<BR>
+275     iCurrentStatus = 0;<BR>
+276     iHandle = -1;<BR>
+277 }<BR>
+278 static void help()<BR>
+279 {<BR>
+280     const char<BR>
+281             *b =<BR>
+282     &quot;-------------------------------------------------------------------------------\n&quot;<BR>
+283     &quot;SIP Library test process - uac v 1.0 (June 13, 2014)\n\n&quot;<BR>
+284     &quot;SIP UAC端 注册,刷新注册,注销实现\n\n&quot;<BR>
+285     &quot;Author: 程序人生\n\n&quot;<BR>
+286     &quot;博客地址:http://blog.csdn.net/hiwubihe QQ:1269122125\n\n&quot;<BR>
+287     &quot;-------------------------------------------------------------------------------\n&quot;<BR>
+288     &quot;\n&quot;<BR>
+289     &quot;              0:Register\n&quot;<BR>
+290     &quot;              1:RefreshRegister\n&quot;<BR>
+291     &quot;              2:UnRegister\n&quot;<BR>
+292     &quot;              3:clear scream\n&quot;<BR>
+293     &quot;              4:exit\n&quot;<BR>
+294     &quot;-------------------------------------------------------------------------------\n&quot;<BR>
+295     &quot;\n&quot;;<BR>
+296     fprintf(stderr, b, strlen(b));<BR>
+297     cout &lt;&lt; &quot;please select method :&quot;;<BR>
+298 }<BR>
+299 //服务处理线程<BR>
+300 void *serverHandle(void *pUser)<BR>
+301 {<BR>
+302     sleep(3);<BR>
+303     help();<BR>
+304     char ch = getchar();<BR>
+305     getchar();<BR>
+306     while (1)<BR>
+307     {<BR>
+308         switch (ch)<BR>
+309         {<BR>
+310         case '0':<BR>
+311             //注册<BR>
+312             Register();<BR>
+313             break;<BR>
+314         case '1':<BR>
+315             //刷新注册<BR>
+316             RefreshRegister();<BR>
+317             break;<BR>
+318         case '2':<BR>
+319             //注销<BR>
+320             UnRegister();<BR>
+321             break;<BR>
+322         case '3':<BR>
+323             if (system(&quot;clear&quot;) &lt; 0)<BR>
+324             {<BR>
+325                 cout &lt;&lt; &quot;clear scream error&quot; &lt;&lt; endl;<BR>
+326                 exit(1);<BR>
+327             }<BR>
+328             break;<BR>
+329         case '4':<BR>
+330             cout &lt;&lt; &quot;exit sipserver......&quot; &lt;&lt; endl;<BR>
+331             getchar();<BR>
+332             exit(0);<BR>
+333         default:<BR>
+334             cout &lt;&lt; &quot;select error&quot; &lt;&lt; endl;<BR>
+335             break;<BR>
+336         }<BR>
+337         cout &lt;&lt; &quot;press any key to continue......&quot; &lt;&lt; endl;<BR>
+338         getchar();<BR>
+339         help();<BR>
+340         ch = getchar();<BR>
+341         getchar();<BR>
+342     }<BR>
+343     return NULL;<BR>
+344 }<BR>
+345 <BR>
+346 //事件处理线程<BR>
+347 void *eventHandle(void *pUser)<BR>
+348 {<BR>
+349     eXosip_event_t* osipEventPtr = (eXosip_event_t*) pUser;<BR>
+350     switch (osipEventPtr-&gt;type)<BR>
+351     {<BR>
+352     //需要继续验证REGISTER是什么类型<BR>
+353     case EXOSIP_REGISTRATION_SUCCESS:<BR>
+354     case EXOSIP_REGISTRATION_FAILURE:<BR>
+355     {<BR>
+356         cout&lt;&lt;&quot;收到状态码:&quot;&lt;&lt;osipEventPtr-&gt;response-&gt;status_code&lt;&lt;&quot;报文&quot;&lt;&lt;endl;<BR>
+357         if(osipEventPtr-&gt;response-&gt;status_code == 401)<BR>
+358         {<BR>
+359             cout&lt;&lt;&quot;发送鉴权报文&quot;&lt;&lt;endl;<BR>
+360         }<BR>
+361         else if(osipEventPtr-&gt;response-&gt;status_code == 200)<BR>
+362         {<BR>
+363             cout&lt;&lt;&quot;接收成功&quot;&lt;&lt;endl;<BR>
+364         }<BR>
+365         else<BR>
+366         {}<BR>
+367     }<BR>
+368         break;<BR>
+369     default:<BR>
+370         cout &lt;&lt; &quot;The sip event type that not be precessed.the event &quot;<BR>
+371             &quot;type is : &quot; &lt;&lt; osipEventPtr-&gt;type &lt;&lt; endl;<BR>
+372         break;<BR>
+373     }<BR>
+374     eXosip_event_free(osipEventPtr);<BR>
+375     return NULL;<BR>
+376 }<BR>
+377 <BR>
+378 int main()<BR>
+379 {<BR>
+380     iCurrentStatus = 0;<BR>
+381     //库处理结果<BR>
+382     int result = OSIP_SUCCESS;<BR>
+383     //初始化库<BR>
+384     if (OSIP_SUCCESS != (result = eXosip_init()))<BR>
+385     {<BR>
+386         printf(&quot;eXosip_init failure.\n&quot;);<BR>
+387         return 1;<BR>
+388     }<BR>
+389     cout &lt;&lt; &quot;eXosip_init success.&quot; &lt;&lt; endl;<BR>
+390     eXosip_set_user_agent(NULL);<BR>
+391     //监听<BR>
+392     if (OSIP_SUCCESS != eXosip_listen_addr(IPPROTO_UDP, NULL, UACPORTINT,<BR>
+393             AF_INET, 0))<BR>
+394     {<BR>
+395         printf(&quot;eXosip_listen_addr failure.\n&quot;);<BR>
+396         return 1;<BR>
+397     }<BR>
+398     //设置监听网卡<BR>
+399     if (OSIP_SUCCESS != eXosip_set_option(<BR>
+400     EXOSIP_OPT_SET_IPV4_FOR_GATEWAY,<BR>
+401             LISTEN_ADDR))<BR>
+402     {<BR>
+403         return -1;<BR>
+404     }<BR>
+405     //开启服务线程<BR>
+406     pthread_t pthser;<BR>
+407     if (0 != pthread_create(&amp;pthser, NULL, serverHandle, NULL))<BR>
+408     {<BR>
+409         printf(&quot;创建主服务失败\n&quot;);<BR>
+410         return -1;<BR>
+411     }<BR>
+412     //事件用于等待<BR>
+413     eXosip_event_t* osipEventPtr = NULL;<BR>
+414     //开启事件循环<BR>
+415     while (true)<BR>
+416     {<BR>
+417         //等待事件 0的单位是秒，500是毫秒<BR>
+418         osipEventPtr = ::eXosip_event_wait(0, 200);<BR>
+419         //处理eXosip库默认处理<BR>
+420         {<BR>
+421             usleep(500 * 1000);<BR>
+422             eXosip_lock();<BR>
+423             //一般处理401/407采用库默认处理<BR>
+424             eXosip_default_action(osipEventPtr);<BR>
+425             eXosip_unlock();<BR>
+426         }<BR>
+427         //事件空继续等待<BR>
+428         if (NULL == osipEventPtr)<BR>
+429         {<BR>
+430             continue;<BR>
+431         }<BR>
+432         //开启线程处理事件并在事件处理完毕将事件指针释放<BR>
+433         pthread_t pth;<BR>
+434         if (0 != pthread_create(&amp;pth, NULL, eventHandle, (void*) osipEventPtr))<BR>
+435         {<BR>
+436             printf(&quot;创建线程处理事件失败\n&quot;);<BR>
+437             continue;<BR>
+438         }<BR>
+439         osipEventPtr = NULL;<BR>
+440     }<BR>
+441 }
+</DD>
+<DT>UAC</DT>
+<!--property:date_created=1515740275-->
+<!--property:date_modified=1515740280-->
+<DD>
+代理客户端程序<BR>
+<BR>
+/** <BR>
+ * 一个使用了 osip 和 eXosip 库的 UAC 代理客户端的演示程序 <BR>
+ *  <BR>
+ * - 只是简单的演示了使用了 osip 和 eXosip2 库的 UAC 代理客户端的如下几个功能： <BR>
+ * * i 发起呼叫 INVITE 请求 <BR>
+ * * h 挂断会话 <BR>
+ * * s 执行方法 INFO  <BR>
+ * * m 执行方法 MESSAGE <BR>
+ *  <BR>
+ * 编 译：g++ -I/usr/local/include -L/usr/local/lib ua_client.cpp -o ua_client -leXosip2 -losip2 -losipparser2 -lpthread <BR>
+ *  <BR>
+ */  <BR>
+  <BR>
+#include &lt;osip2/osip_mt.h&gt;  <BR>
+#include &lt;eXosip2/eXosip.h&gt;  <BR>
+  <BR>
+#include &lt;netinet/in.h&gt;  <BR>
+#include &lt;sys/socket.h&gt;  <BR>
+#include &lt;sys/types.h&gt;  <BR>
+  <BR>
+#include &lt;iostream&gt;  <BR>
+#include &lt;string&gt;  <BR>
+  <BR>
+using namespace std;  <BR>
+  <BR>
+int main(int argc, char* argv[])  <BR>
+{  <BR>
+    eXosip_event_t *je;  <BR>
+    osip_message_t *reg = NULL;  <BR>
+    osip_message_t *invite = NULL;  <BR>
+    osip_message_t *ack = NULL;  <BR>
+    osip_message_t *info = NULL;  <BR>
+    osip_message_t *message = NULL;  <BR>
+    int call_id, dialog_id;  <BR>
+    int i,flag;  <BR>
+    int flag1 = 1;  <BR>
+    int id;  <BR>
+      <BR>
+    string strIdentity = &quot;sip:136@133.37.55.136&quot;;  <BR>
+    string strRegisterer = &quot;sip:133.37.55.136:5060&quot;; // server ip  <BR>
+  <BR>
+    string strSrcCall = &quot;sip:136@133.37.55.136&quot;;  <BR>
+    string strDestCall = &quot;sip:136@133.37.55.136:5060&quot;; // server ip  <BR>
+  <BR>
+      <BR>
+    char command;  <BR>
+    char tmp[4096];  <BR>
+    char localip[128];  <BR>
+  <BR>
+    string strHelp = string(&quot;\n\t--&gt; 命令字符 功能描述 &lt;--\n\n&quot;)  <BR>
+                        + &quot;\t\tr 向服务器注册\n&quot;  <BR>
+                        + &quot;\t\tc 取消注册\n&quot;  <BR>
+                        + &quot;\t\ti 发起呼叫请求\n&quot;  <BR>
+                        + &quot;\t\th 挂断\n&quot;  <BR>
+                        + &quot;\t\tq 退出程序\n&quot;  <BR>
+                        + &quot;\t\ts 执行方法 INFO\n&quot;  <BR>
+                        + &quot;\t\tm 执行方法 MESSAGE\n&quot;  <BR>
+                        + &quot;\t\te 帮助\n\n&quot;;  <BR>
+    cout &lt;&lt; strHelp;  <BR>
+  <BR>
+    string strMsg;  <BR>
+  <BR>
+    i = eXosip_init ();  <BR>
+    if (i != 0)  <BR>
+    {  <BR>
+        cout &lt;&lt; &quot;\t--&gt; Couldn't initialize eXosip! &lt;--\n&quot;;  <BR>
+        return -1;  <BR>
+    }  <BR>
+    else  <BR>
+    {  <BR>
+        cout &lt;&lt; &quot;\t--&gt; eXosip_init successfully! &lt;-- \n\n&quot;;  <BR>
+    }  <BR>
+  <BR>
+    i = eXosip_listen_addr (IPPROTO_UDP, NULL, 5061, AF_INET, 0);  <BR>
+    if (i != 0)  <BR>
+    {  <BR>
+        eXosip_quit ();  <BR>
+        cerr &lt;&lt; &quot;\n\t--&gt; Couldn't initialize transport layer! &lt;-- \n\n&quot;;  <BR>
+        return -1;  <BR>
+    }  <BR>
+    flag = 1;  <BR>
+    while (flag)  <BR>
+    {  <BR>
+        cout &lt;&lt; &quot;请输入一个命令字符：\t&quot;;  <BR>
+        cin &gt;&gt; command;  <BR>
+        <BR>
+        switch (command)  <BR>
+        {  <BR>
+        case 'r':  <BR>
+            cout &lt;&lt; &quot;\n\t--&gt; This modal isn't commpleted! \n&quot; &lt;&lt; endl;  <BR>
+            break;  <BR>
+  <BR>
+        case 'i': // 初始化的 INVITE 请求  <BR>
+            i = eXosip_call_build_initial_invite (&amp;invite,   <BR>
+                                                  strDestCall.c_str(),   <BR>
+                                                  strSrcCall.c_str(),   <BR>
+                                                  NULL,   <BR>
+                                                  &quot;This is a call for a conversation&quot;);  <BR>
+            if (i != 0)  <BR>
+            {  <BR>
+                cout &lt;&lt; &quot;\n --&gt; Intial INVITE failed! &lt;-- \n&quot;;  <BR>
+                break;  <BR>
+            }  <BR>
+  <BR>
+            // 符合 SDP 格式, 其中属性 a 是自定义格式,也就是说可以存放自己的信息,   <BR>
+            // 但是只能是两列,比如帐户信息  <BR>
+            // 但是经测试,格式: v o t必不可少,原因未知,估计是协议栈在传输时需要检查的  <BR>
+  <BR>
+            strMsg = string(&quot;v=0\r\n&quot;)  <BR>
+                   + &quot;o=anonymous 0 0 IN IP4 0.0.0.0\r\n&quot;  <BR>
+                   + &quot;t=1 10\r\n&quot;  <BR>
+                   + &quot;a=username:bluesea\r\n&quot;  <BR>
+                   + &quot;a=password:123456\r\n&quot;;  <BR>
+  <BR>
+            osip_message_set_body (invite, strMsg.c_str(), strMsg.length());  <BR>
+            osip_message_set_content_type (invite, &quot;application/sdp&quot;);  <BR>
+        <BR>
+            // 这里使用了锁机制以保证同步  <BR>
+            eXosip_lock ();  <BR>
+            i = eXosip_call_send_initial_invite (invite);  <BR>
+            eXosip_unlock ();  <BR>
+            flag1 = 1;  <BR>
+            while (flag1)  <BR>
+            {  <BR>
+                je = eXosip_event_wait (0, 200);  <BR>
+                if (je == NULL)  <BR>
+                {  <BR>
+                    cout &lt;&lt; &quot;\n\t--&gt; No response or the time is over! &lt;--\n&quot; &lt;&lt; endl;  <BR>
+                    break;  <BR>
+                }  <BR>
+            <BR>
+                switch (je-&gt;type)  <BR>
+                {  <BR>
+                case EXOSIP_CALL_INVITE:  <BR>
+                    cout &lt;&lt; &quot;\n\t--&gt; a new invite reveived! &lt;--\n&quot; &lt;&lt; endl;  <BR>
+                    break;  <BR>
+  <BR>
+                // announce processing by a remote app  <BR>
+                case EXOSIP_CALL_PROCEEDING:  <BR>
+                    cout &lt;&lt; &quot;\n\t--&gt; proceeding! &lt;--\n&quot; &lt;&lt; endl;  <BR>
+                    break;  <BR>
+  <BR>
+                // announce ringback  <BR>
+                case EXOSIP_CALL_RINGING:  <BR>
+                    cout &lt;&lt; &quot;\n\t--&gt; ringing! &lt;--\n&quot;   <BR>
+                         &lt;&lt; &quot;\n\tcall_id is &quot; &lt;&lt; je-&gt;cid   <BR>
+                         &lt;&lt; &quot;, dialog_id is &quot; &lt;&lt; je-&gt;did &lt;&lt; endl;  <BR>
+                    break;  <BR>
+  <BR>
+                // 收到请求，表示连接成功，下面发送回复确认  <BR>
+                case EXOSIP_CALL_ANSWERED:  <BR>
+                    cout &lt;&lt; &quot;\n\t--&gt; ok! connected! &lt;--\n&quot; &lt;&lt; endl;  <BR>
+                    call_id = je-&gt;cid;  <BR>
+                    dialog_id = je-&gt;did;  <BR>
+                    cout &lt;&lt; &quot;\n\tcall_id is &quot; &lt;&lt; je-&gt;cid   <BR>
+                         &lt;&lt; &quot;, dialog_id is &quot; &lt;&lt; je-&gt;did &lt;&lt; endl;  <BR>
+                    eXosip_call_build_ack (je-&gt;did, &amp;ack);  <BR>
+                    eXosip_call_send_ack (je-&gt;did, ack);  <BR>
+                    flag1 = 0;  <BR>
+                    break;  <BR>
+  <BR>
+                case EXOSIP_CALL_CLOSED:  <BR>
+                    cout &lt;&lt; &quot;\n\t--&gt; the other sid closed! &lt;--\n&quot; &lt;&lt; endl;  <BR>
+                    break;  <BR>
+  <BR>
+                case EXOSIP_CALL_ACK:  <BR>
+                    cout &lt;&lt; &quot;\n\t--&gt; ACK received! &lt;--\n&quot; &lt;&lt; endl;  <BR>
+                    break;  <BR>
+  <BR>
+                default:  <BR>
+                    cout &lt;&lt; &quot;\n\t--&gt; other response!\n&quot; &lt;&lt;endl;  <BR>
+                    break;  <BR>
+                }  <BR>
+            <BR>
+                eXosip_event_free (je);  <BR>
+            }  <BR>
+  <BR>
+            break;  <BR>
+  <BR>
+        case 'h':  <BR>
+            cout &lt;&lt; &quot;\n\t--&gt; Holded ! \n&quot; &lt;&lt; endl;  <BR>
+        <BR>
+            eXosip_lock ();  <BR>
+            eXosip_call_terminate (call_id, dialog_id);  <BR>
+            eXosip_unlock ();  <BR>
+            break;  <BR>
+  <BR>
+        case 'c':  <BR>
+            cout &lt;&lt; &quot;\n\t--&gt; This modal isn't commpleted! \n&quot; &lt;&lt; endl;  <BR>
+            break;  <BR>
+  <BR>
+        case 's':  <BR>
+            // 传输 INFO 方法  <BR>
+            eXosip_call_build_info (dialog_id, &amp;info);  <BR>
+              <BR>
+            snprintf (tmp , 4096, &quot;hello,bluesea&quot;);  <BR>
+            osip_message_set_body (info, tmp, strlen(tmp));  <BR>
+  <BR>
+            // 格式可以任意设定, text/plain 代表文本信息  <BR>
+            osip_message_set_content_type (info, &quot;text/plain&quot;);  <BR>
+            eXosip_call_send_request (dialog_id, info);  <BR>
+            break;  <BR>
+  <BR>
+        case 'm':  <BR>
+            // 传输 MESSAGE方法,也就是即时消息，  <BR>
+            // 和 INFO 方法相比，主要区别，是 MESSAGE 不用建立连接，直接传输信息，  <BR>
+            // 而 INFO 必须在建立 INVITE 的基础上传输。  <BR>
+            cout &lt;&lt; &quot;\n\t--&gt; the mothed :MESSAGE \n&quot; &lt;&lt; endl;  <BR>
+            eXosip_message_build_request (&amp;message,   <BR>
+                                          &quot;MESSAGE&quot;,   <BR>
+                                          strDestCall.c_str(),   <BR>
+                                          strSrcCall.c_str(),   <BR>
+                                          NULL);  <BR>
+            strMsg = &quot;message: hello bluesea!&quot;;  <BR>
+            osip_message_set_body (message, strMsg.c_str(), strMsg.length());  <BR>
+        <BR>
+            // 假设格式是xml  <BR>
+            osip_message_set_content_type (message, &quot;text/xml&quot;);  <BR>
+            eXosip_message_send_request (message);  <BR>
+            break;  <BR>
+  <BR>
+        case 'q':  <BR>
+            eXosip_quit ();  <BR>
+            cout &lt;&lt; &quot;\n\t--&gt; Exit the setup! \n&quot; &lt;&lt; endl;;  <BR>
+            flag = 0;  <BR>
+            break;  <BR>
+  <BR>
+        case 'e':  <BR>
+            cout &lt;&lt; strHelp &lt;&lt; endl;  <BR>
+            break;  <BR>
+  <BR>
+        default:  <BR>
+            cout &lt;&lt; &quot;\n\t--&gt; 不支持的命令 &lt;--\n&quot; &lt;&lt; endl;  <BR>
+            break;  <BR>
+        }  <BR>
+    }  <BR>
+  <BR>
+    return 0;  <BR>
+}  <BR>
+<BR>
+<BR>
+<BR>
+、、、、、、、、、、、、、、、、、、、、、、、、、、、、、、、、、、、、、、、、、、、、、、、、、<BR>
+	USA代理服务器程序<BR>
+<BR>
+<BR>
+/** <BR>
+ * 一个使用了 osip 和 eXosip 库的 UAS 代理服务端的演示程序 <BR>
+ *  <BR>
+ * - 只是简单的演示了使用了 osip 和 eXosip2 库的 UAS 代理服务端的如下几个功能： <BR>
+ *  <BR>
+ * 编 译：g++ -I/usr/local/include -L/usr/local/lib ua_server.cpp -o ua_server -leXosip2 -losip2 -losipparser2 -lpthread <BR>
+ *  <BR>
+ */  <BR>
+  <BR>
+#include &lt;eXosip2/eXosip.h&gt;  <BR>
+  <BR>
+#include &lt;netinet/in.h&gt;  <BR>
+#include &lt;sys/socket.h&gt;  <BR>
+#include &lt;sys/types.h&gt;  <BR>
+  <BR>
+#include &lt;iostream&gt;  <BR>
+#include &lt;fstream&gt;  <BR>
+#include &lt;string&gt;  <BR>
+  <BR>
+using namespace std;  <BR>
+  <BR>
+int main()  <BR>
+{  <BR>
+    eXosip_event_t *je = NULL;  <BR>
+    osip_message_t *ack = NULL;  <BR>
+    osip_message_t *invite = NULL;  <BR>
+    osip_message_t *answer = NULL;  <BR>
+    sdp_message_t *remote_sdp = NULL;  <BR>
+    int call_id, dialog_id;  <BR>
+    int i,j;  <BR>
+    int id;  <BR>
+  <BR>
+    char *sour_call = &quot;sip:136@133.37.55.136&quot;;  <BR>
+    char *dest_call = &quot;sip:136@133.37.55.136:5061&quot;; //client ip/port  <BR>
+  <BR>
+    char command;  <BR>
+    char tmp[4096];  <BR>
+    char localip[128];  <BR>
+    int pos = 0;  <BR>
+  <BR>
+    // 初始化 sip  <BR>
+    i = eXosip_init ();  <BR>
+    if (i != 0)  <BR>
+    {  <BR>
+        cerr &lt;&lt; &quot;\n\t--&gt; Can't initialize eXosip!\n&quot;;  <BR>
+        return -1;  <BR>
+    }  <BR>
+    else  <BR>
+    {  <BR>
+        cout &lt;&lt; &quot;\n\t--&gt; eXosip_init successfully!\n&quot;;  <BR>
+    }  <BR>
+      <BR>
+    i = eXosip_listen_addr (IPPROTO_UDP, NULL, 5060, AF_INET, 0);  <BR>
+    if (i != 0)  <BR>
+    {  <BR>
+        eXosip_quit ();  <BR>
+        cerr &lt;&lt; &quot;\n\t--&gt; eXosip_listen_addr error! Couldn't initialize transport layer!\n&quot;;  <BR>
+    }  <BR>
+  <BR>
+    for(;;)  <BR>
+    {  <BR>
+        // 侦听是否有消息到来  <BR>
+        je = eXosip_event_wait (0, 50);   <BR>
+  <BR>
+        // 协议栈带有此语句,具体作用未知  <BR>
+        eXosip_lock ();  <BR>
+        eXosip_default_action (je);  <BR>
+        eXosip_automatic_refresh ();  <BR>
+        eXosip_unlock ();  <BR>
+  <BR>
+        if (je == NULL) // 没有接收到消息，继续  <BR>
+        {  <BR>
+            continue;  <BR>
+        }  <BR>
+  <BR>
+        switch (je-&gt;type)  <BR>
+        {  <BR>
+        case EXOSIP_MESSAGE_NEW: // 新的消息到来  <BR>
+            cout &lt;&lt; &quot;\n\t*** EXOSIP_MESSAGE_NEW!\n&quot; &lt;&lt; endl;  <BR>
+  <BR>
+            if (MSG_IS_MESSAGE (je-&gt;request)) // 如果接收到的消息类型是 MESSAGE  <BR>
+            {  <BR>
+                {  <BR>
+                    osip_body_t *body;  <BR>
+                    osip_message_get_body (je-&gt;request, 0, &amp;body);   <BR>
+                    cout &lt;&lt; &quot;I get the msg is: &quot; &lt;&lt; body-&gt;body &lt;&lt; endl;  <BR>
+                }  <BR>
+  <BR>
+                // 按照规则，需要回复 OK 信息  <BR>
+                eXosip_message_build_answer (je-&gt;tid, 200, &amp;answer);  <BR>
+                eXosip_message_send_answer (je-&gt;tid, 200, answer);  <BR>
+            }  <BR>
+            break;  <BR>
+  <BR>
+        case EXOSIP_CALL_INVITE: // INVITE 请求消息  <BR>
+            // 得到接收到消息的具体信息  <BR>
+            cout &lt;&lt; &quot;\n\tReceived a INVITE msg from &quot; &lt;&lt; je-&gt;request-&gt;req_uri-&gt;host   <BR>
+                 &lt;&lt; &quot; : &quot; &lt;&lt; je-&gt;request-&gt;req_uri-&gt;port   <BR>
+                 &lt;&lt; &quot;, username is &quot; &lt;&lt; je-&gt;request-&gt;req_uri-&gt;username &lt;&lt; endl;  <BR>
+  <BR>
+            // 得到消息体,认为该消息就是 SDP 格式.  <BR>
+            remote_sdp = eXosip_get_remote_sdp (je-&gt;did);  <BR>
+            call_id = je-&gt;cid;  <BR>
+            dialog_id = je-&gt;did;  <BR>
+          <BR>
+            eXosip_lock ();  <BR>
+  <BR>
+            eXosip_call_send_answer (je-&gt;tid, 180, NULL);  <BR>
+            i = eXosip_call_build_answer (je-&gt;tid, 200, &amp;answer);  <BR>
+            if (i != 0)  <BR>
+            {  <BR>
+                cout &lt;&lt; &quot;\n\t--&gt; This request msg is invalid! Cann't response!\n&quot; &lt;&lt; endl;  <BR>
+                eXosip_call_send_answer (je-&gt;tid, 400, NULL);  <BR>
+            }  <BR>
+            else  <BR>
+            {  <BR>
+                snprintf (tmp, 4096,  <BR>
+                    &quot;v=0\r\n&quot;  <BR>
+                    &quot;o=anonymous 0 0 IN IP4 0.0.0.0\r\n&quot;  <BR>
+                    &quot;t=1 10\r\n&quot;  <BR>
+                    &quot;a=username:rainfish\r\n&quot;  <BR>
+                    &quot;a=password:123\r\n&quot;);  <BR>
+              <BR>
+                // 设置回复的SDP消息体,下一步计划分析消息体  <BR>
+                // 没有分析消息体，直接回复原来的消息，这一块做的不好。  <BR>
+                osip_message_set_body (answer, tmp, strlen(tmp));  <BR>
+                osip_message_set_content_type (answer, &quot;application/sdp&quot;);  <BR>
+              <BR>
+                eXosip_call_send_answer (je-&gt;tid, 200, answer);  <BR>
+                cout &lt;&lt; &quot;\n\t--&gt; send 200 over!&quot; &lt;&lt; endl;  <BR>
+            }  <BR>
+  <BR>
+            eXosip_unlock ();  <BR>
+          <BR>
+            // 显示出在 sdp 消息体中的 attribute 的内容,里面计划存放我们的信息  <BR>
+            cout &lt;&lt; &quot;\n\t--&gt; The INFO is :\n&quot; ;  <BR>
+            while (!osip_list_eol ( &amp;(remote_sdp-&gt;a_attributes), pos))  <BR>
+            {  <BR>
+                sdp_attribute_t *at;  <BR>
+              <BR>
+                //这里解释了为什么在SDP消息体中属性a里面存放必须是两列  <BR>
+                at = (sdp_attribute_t *) osip_list_get ( &amp;remote_sdp-&gt;a_attributes, pos);  <BR>
+                cout &lt;&lt; &quot;\n\t&quot; &lt;&lt; at-&gt;a_att_field   <BR>
+                     &lt;&lt; &quot; : &quot; &lt;&lt; at-&gt;a_att_value &lt;&lt; endl;  <BR>
+              <BR>
+                pos ++;  <BR>
+            }  <BR>
+            break;  <BR>
+  <BR>
+        case EXOSIP_CALL_ACK:  <BR>
+            cout &lt;&lt; &quot;\n\t--&gt; ACK recieved!\n&quot; &lt;&lt; endl;  <BR>
+            // printf (&quot;the cid is %s, did is %s\n&quot;, je-&gt;did, je-&gt;cid);   <BR>
+            break;  <BR>
+  <BR>
+        case EXOSIP_CALL_CLOSED:  <BR>
+            cout &lt;&lt; &quot;\n\t--&gt; the remote hold the session!\n&quot; &lt;&lt; endl;  <BR>
+            // eXosip_call_build_ack(dialog_id, &amp;ack);  <BR>
+            // eXosip_call_send_ack(dialog_id, ack);   <BR>
+            i = eXosip_call_build_answer (je-&gt;tid, 200, &amp;answer);  <BR>
+            if (i != 0)  <BR>
+            {  <BR>
+                printf (&quot;This request msg is invalid!Cann't response!\n&quot;);  <BR>
+                eXosip_call_send_answer (je-&gt;tid, 400, NULL);  <BR>
+            }  <BR>
+            else  <BR>
+            {  <BR>
+                eXosip_call_send_answer (je-&gt;tid, 200, answer);  <BR>
+                cout &lt;&lt; &quot;\n\t--&gt; bye send 200 over!\n&quot;;  <BR>
+            }   <BR>
+            break;  <BR>
+  <BR>
+        case EXOSIP_CALL_MESSAGE_NEW:  <BR>
+  <BR>
+            cout &lt;&lt; &quot;\n\t*** EXOSIP_CALL_MESSAGE_NEW\n&quot; &lt;&lt; endl;  <BR>
+            if (MSG_IS_INFO(je-&gt;request) ) // 如果传输的是 INFO 方法  <BR>
+            {  <BR>
+                eXosip_lock ();  <BR>
+                i = eXosip_call_build_answer (je-&gt;tid, 200, &amp;answer);  <BR>
+                if (i == 0)  <BR>
+                {  <BR>
+                    eXosip_call_send_answer (je-&gt;tid, 200, answer);  <BR>
+                }  <BR>
+  <BR>
+                eXosip_unlock ();  <BR>
+  <BR>
+                {  <BR>
+                    osip_body_t *body;  <BR>
+                    osip_message_get_body (je-&gt;request, 0, &amp;body);  <BR>
+                    cout &lt;&lt; &quot;the body is &quot; &lt;&lt; body-&gt;body &lt;&lt; endl;  <BR>
+                }  <BR>
+            }  <BR>
+            break;   <BR>
+  <BR>
+        default:  <BR>
+            cout &lt;&lt; &quot;\n\t--&gt; Could not parse the msg!\n&quot; &lt;&lt; endl;  <BR>
+        }  <BR>
+    }   <BR>
+  <BR>
+    return 0;  <BR>
+}  
+</DD>
+<DT>opencv</DT>
+<!--property:date_created=1515740310-->
+<!--property:date_modified=1515740318-->
+<!--property:expanded-->
+<DD>
+clone opencv 和 opencv_conrib<BR>
+<BR>
+现在CMake<BR>
+<BR>
+configure<BR>
+<BR>
+配置<BR>
+OPENCV_EXTRA_MODULES_PATH = opencv_contirb的path<DL>
+<DT>编译</DT>
+<!--property:date_created=1515740334-->
+<!--property:date_modified=1515740334-->
+<DT>人脸识别</DT>
+<!--property:date_created=1515740503-->
+<!--property:date_modified=1515740503-->
+<!--property:expanded-->
+<DD>
+<DL>
+<DT>基于python</DT>
+<!--property:date_created=1515740512-->
+<!--property:date_modified=1515740538-->
+<DD>
+openCV3的安装这里我说一下mac上的安装方法<BR>
+<BR>
+openCV3 在mac采用brew安装  如果brew没用过可以看下我之前写的安装Libpng的帖子里面有一些注意事项<BR>
+<BR>
+brew update #更新brew<BR>
+<BR>
+brew install opencv3 --with-contrib --with-python3 --without-python  #安装opencv3 保证python为3.x<BR>
+<BR>
+正常情况下就开始安装了 安装之后 找到opencv的so文件 <BR>
+<BR>
+默认在  /usr/local/Cellar/opencv3/3.1.0_4/lib/python3.6/site-packages/   #根据你的版本会有差异<BR>
+<BR>
+找到你python的安装位置的site-packages 目录<BR>
+<BR>
+默认在  /Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/site-packages/ #根据你的版本会有差异<BR>
+<BR>
+然后做一个软链<BR>
+<BR>
+ln -s /usr/local/Cellar/opencv3/3.2.0/lib/python3.6/site-packages/cv2.cpython-36m-darwin.so ./cv2<BR>
+<BR>
+<BR>
+import cv2  <BR>
+import numpy as np  <BR>
+#指定图片的人脸识别然后存储  <BR>
+img = cv2.imread(&quot;./333.jpg&quot;)  <BR>
+color = (0, 255, 0)  <BR>
+  <BR>
+grey = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  <BR>
+  <BR>
+classfier = cv2.CascadeClassifier(&quot;./data/haarcascades/haarcascade_frontalface_alt2.xml&quot;)  <BR>
+  <BR>
+faceRects = classfier.detectMultiScale(grey, scaleFactor=1.2, minNeighbors=3, minSize=(32, 32))  <BR>
+if len(faceRects) &gt; 0:  # 大于0则检测到人脸  <BR>
+    for faceRect in faceRects:  # 单独框出每一张人脸  <BR>
+        x, y, w, h = faceRect  <BR>
+        cv2.rectangle(img, (x - 10, y - 10), (x + w + 10, y + h + 10), color, 3) #5控制绿色框的粗细  <BR>
+  <BR>
+# 写入图像  <BR>
+cv2.imwrite('./aaa.jpg',img)  
+</DD>
+</DL>
+
+</DD>
+</DL>
+
+</DD>
+</DL>
+
+</DD>
+<DT>Osip2&amp;Exosip2</DT>
+<!--property:date_created=1515575286-->
+<!--property:date_modified=1515575473-->
+<DD>
+<BR>
+库名	功能<BR>
+Osip2	一个开源的SIP协议栈，使用C编写，主要提供解析SIP和SDP消息的API和事物处理的状态机。<BR>
+Exosip2	是对Osip2协议栈的封装和调用，作为Osip2的一个扩展协议集，使得Osip2更容易被使用。<BR>
+Boost	一个准标准库，相当于对STL的的延续和扩充。<BR>
+Loki	C++的模板类库<BR>
+<BR>
+sip事务的概念：一个sip请求以及由它触发的一系列应答（包括临时应答和一个最终应答）。<BR>
+<BR>
+sip请求有6种（核心规范定义的，也有扩展），也叫6个方法(Method字段标识)：INVITE, ACK, OPTIONS, BYE, CANCEL, REGISTER<BR>
+<BR>
+sip 请求的格式包括请求行(如INVITE sip:192.168.101.30 SIP/2.0)，sip应答的格式包括状态行(如SIP/2.0 100 Trying)；sip应答的状态码从100到699，其中100~199是临时(provisional)应答。<BR>
+<BR>
+INVITE请求是三次握手机制，其他请求都采用两次握手机制。<BR>
+<BR>
+CANCEL 请求用于取消悬而未决的事务，我的理解是一方发出INVITE，但是另一方始终没有做出应答，发出200OK消息（超过了默认的振铃时长），那么UAC会 自动发出一个CANCEL请求，UAS返回200OK，并且同时发出487状态码的应答，UAC再对收到的487消息发出ACK确认，即最开始的 INVITE和487以及ACK构成三次握手。<BR>
+<BR>
+OPTIONS请求用于询问服务器的性能情况，包括这个服务器所支持的方法（可能会有扩展方法）和会话描述协议。<BR>
+<BR>
+代理服务器的三种类型：保留呼叫状态代理、保留状态代理、不保留状态代理。这三种类型的代理在处理能力和所占用资源上有差别，在代理分发中我们采用网络核心无状态，而在流量较小的网络边界采用智能性高的保留（呼叫）状态服务器处理路由。<BR>
+<BR>
+sip消息编码采用文本方式（即使用字符串），相对的是二进制的编码方式，前者易于调试和扩展，后者则有利于节省带宽。<BR>
+<BR>
+sip标题头：<BR>
+CALL-ID 字 段用于标识一个特定邀请以及与这个邀请相关的所有后续事务（即标识一个会话），比如一方发起邀请加入一个国际象棋的会话，那么INVITE请求以及应答， BYE请求以及应答都共享一个CALL-ID，因为这两个事务都属于一个特定邀请。而两个用户之间可以同时存在多个邀请（比如在下象棋的同时发起聊天的邀 请），那么一个邀请中的后续事务将通过这个邀请特有的CALL-ID来区分，如一方发出BYE消息来结束聊天，但是下棋仍然进行中，那么另一方将根据 BYE消息的CALL-ID来确定要结束的究竟是哪一个会话。 <BR>
+<BR>
+CSeq 字段是用来给同一个会话中的 事务进行排序的。可以理解为，会话由CALL-ID来标识，会话中的事务则由CSeq标识。除了ACK请求和CANCEL请求，INVITE之后的请求中 CSeq字段的数字是最初请求(INVITE)的CSeq递增的结果。而ACK和CANCEL请求则拥有与它所确认（取消）的请求相同的CSeq数字部 分，只是方法名不同。<BR>
+(sip标题头续)<BR>
+Contact 字段是被呼叫方发送200OK消息时带上的，包含了被叫方的真实IP，这样sip服务器在路由第一个INVITE请求之后就可以被卸载掉（越过），不再需要存在于信令路径中。<BR>
+<BR>
+Recode-Route和Route字 段是用来使sip服务器保留在每次请求中，不被绕过。Record-Route字段由信令路径上的服务器添加（每经过一个信令路径上必须存在的代理，就添 加一个Record-Route标题头），maddr参数包含该代理的IP地址。被叫方发出的200OK应答包含Record-Route和 Contact字段（Record-Route可能有多个），呼叫方收到200OK后根据这两个字段创建用于后续请求的Route标题头（可能有多个）， 其包含的是信令路径上的下一跳的下一跳的（hehe，有点别扭，不过意思是对的）真实IP。<BR>
+<BR>
+To 字段 总是包含被呼叫方的地址（通过sip代理时是公用地址，点对点时是真实ip），要注意的是区别该标题头和sip消息请求行中的Request-URI。 To在信令路径中不会被代理改变，然而Request-URI包含的是信令路径中下一跳的地址，因此在路途中被每个代理改变。<BR>
+<BR>
+Via 字 段存储所有处理请求的代理地址（包括用户代理和sip代理），它可以用来检测路由循环，也用于使应答消息经过请求消息来时相同的路径（方向相反）。因此， 在请求消息发送时，via标题头的数量是随着跳数逐渐增加的，而应答消息返回时，via标题头的数量则逐渐递减（每经过一跳则剥离一个有它自己地址的 Via标题头）。<BR>
+(sip标题头完)<BR>
+<BR>
+sip消息可能含有消息体（一个或多个），通常是会话描述符，也可以是照片或其他附件。一般情况下，消息体只对UA有意义，因此可被端到端加密。有时候，sip代理处于控制的原因也需要检查被交换媒体的信息。 <BR>
+ NVITE事务：<BR>
+<BR>
+SIP使用UDP传输协议来传送INVITE消息时，要使用逐 跳重传机制保证INVITE的最终传送，即用户代理UA和sip代理proxy都要保证INVITE到达下一跳，下一跳收到时会返回一个临时应答 （proxy返回100Trying，UA返回100Trying和180ringing），代理在限定时间内收不到应答即会重传INVITE。<BR>
+<BR>
+临时应答（100~199）用于阻止逐跳INVITE重传，没有端到端的可靠传输，也就是说当被叫方返回180应答时，如果在路径中途丢失，也不会重传。<BR>
+<BR>
+最终应答（200~699）能被保证到达它们想要去的目的地。<BR>
+成 功应答（200~299）被可靠地传送到呼叫方UA，但不是使用逐跳重传机制。只有呼叫方UA能为最终成功应答发送一个ACK（直接发送到被叫方UA）， 如果成功应答在路径中途丢失或者UA发出的ACK丢失，那么被叫方会在限定时间内收不到ACK时重新发送最终应答，直到收到ACK的确认。<BR>
+非成功最终应答（300~699）使用和INVITE一样的逐跳机制。被叫方用户代理将持续重传非成功应答（给前一跳），直到收到ACK为止（proxy也可以为非成功应答发送ACK）。<BR>
+CANCEL事务：<BR>
+CANCEL事务与INVITE事务都是逐跳事务，但是处理方法不同，路径上的每一个代理收到CANCEL请求时，都会发送一个最终应答来响应（而不是发出临时应答），并且向下一跳发送一个CANCEL请求。
+</DD>
+<DT>osip</DT>
+<!--property:date_created=1515669641-->
+<!--property:date_modified=1515669654-->
+<DD>
+ares_platform.h,<BR>
+<BR>
+ares_platform.c,<BR>
+<BR>
+ares_create_query.c<DL>
+<DT>UAC代理</DT>
+<!--property:date_created=1515731364-->
+<!--property:date_modified=1515731372-->
+<!--property:expanded-->
+<DD>
+    ----------- UAC 代理客户端的代码整理 ---------------  <BR>
+   <BR>
+/** <BR>
+ * 一个使用了 osip 和 eXosip 库的 UAC 代理客户端的演示程序 <BR>
+ *  <BR>
+ * - 只是简单的演示了使用了 osip 和 eXosip2 库的 UAC 代理客户端的如下几个功能： <BR>
+ * * i 发起呼叫 INVITE 请求 <BR>
+ * * h 挂断会话 <BR>
+ * * s 执行方法 INFO  <BR>
+ * * m 执行方法 MESSAGE <BR>
+ *  <BR>
+ * 编 译：g++ -I/usr/local/include -L/usr/local/lib ua_client.cpp -o ua_client -leXosip2 -losip2 -losipparser2 -lpthread <BR>
+ *  <BR>
+ */  <BR>
+  <BR>
+#include &lt;osip2/osip_mt.h&gt;  <BR>
+#include &lt;eXosip2/eXosip.h&gt;  <BR>
+  <BR>
+#include &lt;netinet/in.h&gt;  <BR>
+#include &lt;sys/socket.h&gt;  <BR>
+#include &lt;sys/types.h&gt;  <BR>
+  <BR>
+#include &lt;iostream&gt;  <BR>
+#include &lt;string&gt;  <BR>
+  <BR>
+using namespace std;  <BR>
+  <BR>
+int main(int argc, char* argv[])  <BR>
+{  <BR>
+    eXosip_event_t *je;  <BR>
+    osip_message_t *reg = NULL;  <BR>
+    osip_message_t *invite = NULL;  <BR>
+    osip_message_t *ack = NULL;  <BR>
+    osip_message_t *info = NULL;  <BR>
+    osip_message_t *message = NULL;  <BR>
+    int call_id, dialog_id;  <BR>
+    int i,flag;  <BR>
+    int flag1 = 1;  <BR>
+    int id;  <BR>
+      <BR>
+    string strIdentity = &quot;sip:136@133.37.55.136&quot;;  <BR>
+    string strRegisterer = &quot;sip:133.37.55.136:5060&quot;; // server ip  <BR>
+  <BR>
+    string strSrcCall = &quot;sip:136@133.37.55.136&quot;;  <BR>
+    string strDestCall = &quot;sip:136@133.37.55.136:5060&quot;; // server ip  <BR>
+  <BR>
+      <BR>
+    char command;  <BR>
+    char tmp[4096];  <BR>
+    char localip[128];  <BR>
+  <BR>
+    string strHelp = string(&quot;\n\t--&gt; 命令字符 功能描述 &lt;--\n\n&quot;)  <BR>
+                        + &quot;\t\tr 向服务器注册\n&quot;  <BR>
+                        + &quot;\t\tc 取消注册\n&quot;  <BR>
+                        + &quot;\t\ti 发起呼叫请求\n&quot;  <BR>
+                        + &quot;\t\th 挂断\n&quot;  <BR>
+                        + &quot;\t\tq 退出程序\n&quot;  <BR>
+                        + &quot;\t\ts 执行方法 INFO\n&quot;  <BR>
+                        + &quot;\t\tm 执行方法 MESSAGE\n&quot;  <BR>
+                        + &quot;\t\te 帮助\n\n&quot;;  <BR>
+    cout &lt;&lt; strHelp;  <BR>
+  <BR>
+    string strMsg;  <BR>
+  <BR>
+    i = eXosip_init ();  <BR>
+    if (i != 0)  <BR>
+    {  <BR>
+        cout &lt;&lt; &quot;\t--&gt; Couldn't initialize eXosip! &lt;--\n&quot;;  <BR>
+        return -1;  <BR>
+    }  <BR>
+    else  <BR>
+    {  <BR>
+        cout &lt;&lt; &quot;\t--&gt; eXosip_init successfully! &lt;-- \n\n&quot;;  <BR>
+    }  <BR>
+  <BR>
+    i = eXosip_listen_addr (IPPROTO_UDP, NULL, 5061, AF_INET, 0);  <BR>
+    if (i != 0)  <BR>
+    {  <BR>
+        eXosip_quit ();  <BR>
+        cerr &lt;&lt; &quot;\n\t--&gt; Couldn't initialize transport layer! &lt;-- \n\n&quot;;  <BR>
+        return -1;  <BR>
+    }  <BR>
+    flag = 1;  <BR>
+    while (flag)  <BR>
+    {  <BR>
+        cout &lt;&lt; &quot;请输入一个命令字符：\t&quot;;  <BR>
+        cin &gt;&gt; command;  <BR>
+        <BR>
+        switch (command)  <BR>
+        {  <BR>
+        case 'r':  <BR>
+            cout &lt;&lt; &quot;\n\t--&gt; This modal isn't commpleted! \n&quot; &lt;&lt; endl;  <BR>
+            break;  <BR>
+  <BR>
+        case 'i': // 初始化的 INVITE 请求  <BR>
+            i = eXosip_call_build_initial_invite (&amp;invite,   <BR>
+                                                  strDestCall.c_str(),   <BR>
+                                                  strSrcCall.c_str(),   <BR>
+                                                  NULL,   <BR>
+                                                  &quot;This is a call for a conversation&quot;);  <BR>
+            if (i != 0)  <BR>
+            {  <BR>
+                cout &lt;&lt; &quot;\n --&gt; Intial INVITE failed! &lt;-- \n&quot;;  <BR>
+                break;  <BR>
+            }  <BR>
+  <BR>
+            // 符合 SDP 格式, 其中属性 a 是自定义格式,也就是说可以存放自己的信息,   <BR>
+            // 但是只能是两列,比如帐户信息  <BR>
+            // 但是经测试,格式: v o t必不可少,原因未知,估计是协议栈在传输时需要检查的  <BR>
+  <BR>
+            strMsg = string(&quot;v=0\r\n&quot;)  <BR>
+                   + &quot;o=anonymous 0 0 IN IP4 0.0.0.0\r\n&quot;  <BR>
+                   + &quot;t=1 10\r\n&quot;  <BR>
+                   + &quot;a=username:bluesea\r\n&quot;  <BR>
+                   + &quot;a=password:123456\r\n&quot;;  <BR>
+  <BR>
+            osip_message_set_body (invite, strMsg.c_str(), strMsg.length());  <BR>
+            osip_message_set_content_type (invite, &quot;application/sdp&quot;);  <BR>
+        <BR>
+            // 这里使用了锁机制以保证同步  <BR>
+            eXosip_lock ();  <BR>
+            i = eXosip_call_send_initial_invite (invite);  <BR>
+            eXosip_unlock ();  <BR>
+            flag1 = 1;  <BR>
+            while (flag1)  <BR>
+            {  <BR>
+                je = eXosip_event_wait (0, 200);  <BR>
+                if (je == NULL)  <BR>
+                {  <BR>
+                    cout &lt;&lt; &quot;\n\t--&gt; No response or the time is over! &lt;--\n&quot; &lt;&lt; endl;  <BR>
+                    break;  <BR>
+                }  <BR>
+            <BR>
+                switch (je-&gt;type)  <BR>
+                {  <BR>
+                case EXOSIP_CALL_INVITE:  <BR>
+                    cout &lt;&lt; &quot;\n\t--&gt; a new invite reveived! &lt;--\n&quot; &lt;&lt; endl;  <BR>
+                    break;  <BR>
+  <BR>
+                // announce processing by a remote app  <BR>
+                case EXOSIP_CALL_PROCEEDING:  <BR>
+                    cout &lt;&lt; &quot;\n\t--&gt; proceeding! &lt;--\n&quot; &lt;&lt; endl;  <BR>
+                    break;  <BR>
+  <BR>
+                // announce ringback  <BR>
+                case EXOSIP_CALL_RINGING:  <BR>
+                    cout &lt;&lt; &quot;\n\t--&gt; ringing! &lt;--\n&quot;   <BR>
+                         &lt;&lt; &quot;\n\tcall_id is &quot; &lt;&lt; je-&gt;cid   <BR>
+                         &lt;&lt; &quot;, dialog_id is &quot; &lt;&lt; je-&gt;did &lt;&lt; endl;  <BR>
+                    break;  <BR>
+  <BR>
+                // 收到请求，表示连接成功，下面发送回复确认  <BR>
+                case EXOSIP_CALL_ANSWERED:  <BR>
+                    cout &lt;&lt; &quot;\n\t--&gt; ok! connected! &lt;--\n&quot; &lt;&lt; endl;  <BR>
+                    call_id = je-&gt;cid;  <BR>
+                    dialog_id = je-&gt;did;  <BR>
+                    cout &lt;&lt; &quot;\n\tcall_id is &quot; &lt;&lt; je-&gt;cid   <BR>
+                         &lt;&lt; &quot;, dialog_id is &quot; &lt;&lt; je-&gt;did &lt;&lt; endl;  <BR>
+                    eXosip_call_build_ack (je-&gt;did, &amp;ack);  <BR>
+                    eXosip_call_send_ack (je-&gt;did, ack);  <BR>
+                    flag1 = 0;  <BR>
+                    break;  <BR>
+  <BR>
+                case EXOSIP_CALL_CLOSED:  <BR>
+                    cout &lt;&lt; &quot;\n\t--&gt; the other sid closed! &lt;--\n&quot; &lt;&lt; endl;  <BR>
+                    break;  <BR>
+  <BR>
+                case EXOSIP_CALL_ACK:  <BR>
+                    cout &lt;&lt; &quot;\n\t--&gt; ACK received! &lt;--\n&quot; &lt;&lt; endl;  <BR>
+                    break;  <BR>
+  <BR>
+                default:  <BR>
+                    cout &lt;&lt; &quot;\n\t--&gt; other response!\n&quot; &lt;&lt;endl;  <BR>
+                    break;  <BR>
+                }  <BR>
+            <BR>
+                eXosip_event_free (je);  <BR>
+            }  <BR>
+  <BR>
+            break;  <BR>
+  <BR>
+        case 'h':  <BR>
+            cout &lt;&lt; &quot;\n\t--&gt; Holded ! \n&quot; &lt;&lt; endl;  <BR>
+        <BR>
+            eXosip_lock ();  <BR>
+            eXosip_call_terminate (call_id, dialog_id);  <BR>
+            eXosip_unlock ();  <BR>
+            break;  <BR>
+  <BR>
+        case 'c':  <BR>
+            cout &lt;&lt; &quot;\n\t--&gt; This modal isn't commpleted! \n&quot; &lt;&lt; endl;  <BR>
+            break;  <BR>
+  <BR>
+        case 's':  <BR>
+            // 传输 INFO 方法  <BR>
+            eXosip_call_build_info (dialog_id, &amp;info);  <BR>
+              <BR>
+            snprintf (tmp , 4096, &quot;hello,bluesea&quot;);  <BR>
+            osip_message_set_body (info, tmp, strlen(tmp));  <BR>
+  <BR>
+            // 格式可以任意设定, text/plain 代表文本信息  <BR>
+            osip_message_set_content_type (info, &quot;text/plain&quot;);  <BR>
+            eXosip_call_send_request (dialog_id, info);  <BR>
+            break;  <BR>
+  <BR>
+        case 'm':  <BR>
+            // 传输 MESSAGE方法,也就是即时消息，  <BR>
+            // 和 INFO 方法相比，主要区别，是 MESSAGE 不用建立连接，直接传输信息，  <BR>
+            // 而 INFO 必须在建立 INVITE 的基础上传输。  <BR>
+            cout &lt;&lt; &quot;\n\t--&gt; the mothed :MESSAGE \n&quot; &lt;&lt; endl;  <BR>
+            eXosip_message_build_request (&amp;message,   <BR>
+                                          &quot;MESSAGE&quot;,   <BR>
+                                          strDestCall.c_str(),   <BR>
+                                          strSrcCall.c_str(),   <BR>
+                                          NULL);  <BR>
+            strMsg = &quot;message: hello bluesea!&quot;;  <BR>
+            osip_message_set_body (message, strMsg.c_str(), strMsg.length());  <BR>
+        <BR>
+            // 假设格式是xml  <BR>
+            osip_message_set_content_type (message, &quot;text/xml&quot;);  <BR>
+            eXosip_message_send_request (message);  <BR>
+            break;  <BR>
+  <BR>
+        case 'q':  <BR>
+            eXosip_quit ();  <BR>
+            cout &lt;&lt; &quot;\n\t--&gt; Exit the setup! \n&quot; &lt;&lt; endl;;  <BR>
+            flag = 0;  <BR>
+            break;  <BR>
+  <BR>
+        case 'e':  <BR>
+            cout &lt;&lt; strHelp &lt;&lt; endl;  <BR>
+            break;  <BR>
+  <BR>
+        default:  <BR>
+            cout &lt;&lt; &quot;\n\t--&gt; 不支持的命令 &lt;--\n&quot; &lt;&lt; endl;  <BR>
+            break;  <BR>
+        }  <BR>
+    }  <BR>
+  <BR>
+    return 0;  <BR>
+}  <BR>
+    ----------- UAS 代理服务器端的代码整理 ---------------  <BR>
+  <BR>
+/** <BR>
+ * 一个使用了 osip 和 eXosip 库的 UAS 代理服务端的演示程序 <BR>
+ *  <BR>
+ * - 只是简单的演示了使用了 osip 和 eXosip2 库的 UAS 代理服务端的如下几个功能： <BR>
+ *  <BR>
+ * 编 译：g++ -I/usr/local/include -L/usr/local/lib ua_server.cpp -o ua_server -leXosip2 -losip2 -losipparser2 -lpthread <BR>
+ *  <BR>
+ */  <BR>
+  <BR>
+#include &lt;eXosip2/eXosip.h&gt;  <BR>
+  <BR>
+#include &lt;netinet/in.h&gt;  <BR>
+#include &lt;sys/socket.h&gt;  <BR>
+#include &lt;sys/types.h&gt;  <BR>
+  <BR>
+#include &lt;iostream&gt;  <BR>
+#include &lt;fstream&gt;  <BR>
+#include &lt;string&gt;  <BR>
+  <BR>
+using namespace std;  <BR>
+  <BR>
+int main()  <BR>
+{  <BR>
+    eXosip_event_t *je = NULL;  <BR>
+    osip_message_t *ack = NULL;  <BR>
+    osip_message_t *invite = NULL;  <BR>
+    osip_message_t *answer = NULL;  <BR>
+    sdp_message_t *remote_sdp = NULL;  <BR>
+    int call_id, dialog_id;  <BR>
+    int i,j;  <BR>
+    int id;  <BR>
+  <BR>
+    char *sour_call = &quot;sip:136@133.37.55.136&quot;;  <BR>
+    char *dest_call = &quot;sip:136@133.37.55.136:5061&quot;; //client ip/port  <BR>
+  <BR>
+    char command;  <BR>
+    char tmp[4096];  <BR>
+    char localip[128];  <BR>
+    int pos = 0;  <BR>
+  <BR>
+    // 初始化 sip  <BR>
+    i = eXosip_init ();  <BR>
+    if (i != 0)  <BR>
+    {  <BR>
+        cerr &lt;&lt; &quot;\n\t--&gt; Can't initialize eXosip!\n&quot;;  <BR>
+        return -1;  <BR>
+    }  <BR>
+    else  <BR>
+    {  <BR>
+        cout &lt;&lt; &quot;\n\t--&gt; eXosip_init successfully!\n&quot;;  <BR>
+    }  <BR>
+      <BR>
+    i = eXosip_listen_addr (IPPROTO_UDP, NULL, 5060, AF_INET, 0);  <BR>
+    if (i != 0)  <BR>
+    {  <BR>
+        eXosip_quit ();  <BR>
+        cerr &lt;&lt; &quot;\n\t--&gt; eXosip_listen_addr error! Couldn't initialize transport layer!\n&quot;;  <BR>
+    }  <BR>
+  <BR>
+    for(;;)  <BR>
+    {  <BR>
+        // 侦听是否有消息到来  <BR>
+        je = eXosip_event_wait (0, 50);   <BR>
+  <BR>
+        // 协议栈带有此语句,具体作用未知  <BR>
+        eXosip_lock ();  <BR>
+        eXosip_default_action (je);  <BR>
+        eXosip_automatic_refresh ();  <BR>
+        eXosip_unlock ();  <BR>
+  <BR>
+        if (je == NULL) // 没有接收到消息，继续  <BR>
+        {  <BR>
+            continue;  <BR>
+        }  <BR>
+  <BR>
+        switch (je-&gt;type)  <BR>
+        {  <BR>
+        case EXOSIP_MESSAGE_NEW: // 新的消息到来  <BR>
+            cout &lt;&lt; &quot;\n\t*** EXOSIP_MESSAGE_NEW!\n&quot; &lt;&lt; endl;  <BR>
+  <BR>
+            if (MSG_IS_MESSAGE (je-&gt;request)) // 如果接收到的消息类型是 MESSAGE  <BR>
+            {  <BR>
+                {  <BR>
+                    osip_body_t *body;  <BR>
+                    osip_message_get_body (je-&gt;request, 0, &amp;body);   <BR>
+                    cout &lt;&lt; &quot;I get the msg is: &quot; &lt;&lt; body-&gt;body &lt;&lt; endl;  <BR>
+                }  <BR>
+  <BR>
+                // 按照规则，需要回复 OK 信息  <BR>
+                eXosip_message_build_answer (je-&gt;tid, 200, &amp;answer);  <BR>
+                eXosip_message_send_answer (je-&gt;tid, 200, answer);  <BR>
+            }  <BR>
+            break;  <BR>
+  <BR>
+        case EXOSIP_CALL_INVITE: // INVITE 请求消息  <BR>
+            // 得到接收到消息的具体信息  <BR>
+            cout &lt;&lt; &quot;\n\tReceived a INVITE msg from &quot; &lt;&lt; je-&gt;request-&gt;req_uri-&gt;host   <BR>
+                 &lt;&lt; &quot; : &quot; &lt;&lt; je-&gt;request-&gt;req_uri-&gt;port   <BR>
+                 &lt;&lt; &quot;, username is &quot; &lt;&lt; je-&gt;request-&gt;req_uri-&gt;username &lt;&lt; endl;  <BR>
+  <BR>
+            // 得到消息体,认为该消息就是 SDP 格式.  <BR>
+            remote_sdp = eXosip_get_remote_sdp (je-&gt;did);  <BR>
+            call_id = je-&gt;cid;  <BR>
+            dialog_id = je-&gt;did;  <BR>
+          <BR>
+            eXosip_lock ();  <BR>
+  <BR>
+            eXosip_call_send_answer (je-&gt;tid, 180, NULL);  <BR>
+            i = eXosip_call_build_answer (je-&gt;tid, 200, &amp;answer);  <BR>
+            if (i != 0)  <BR>
+            {  <BR>
+                cout &lt;&lt; &quot;\n\t--&gt; This request msg is invalid! Cann't response!\n&quot; &lt;&lt; endl;  <BR>
+                eXosip_call_send_answer (je-&gt;tid, 400, NULL);  <BR>
+            }  <BR>
+            else  <BR>
+            {  <BR>
+                snprintf (tmp, 4096,  <BR>
+                    &quot;v=0\r\n&quot;  <BR>
+                    &quot;o=anonymous 0 0 IN IP4 0.0.0.0\r\n&quot;  <BR>
+                    &quot;t=1 10\r\n&quot;  <BR>
+                    &quot;a=username:rainfish\r\n&quot;  <BR>
+                    &quot;a=password:123\r\n&quot;);  <BR>
+              <BR>
+                // 设置回复的SDP消息体,下一步计划分析消息体  <BR>
+                // 没有分析消息体，直接回复原来的消息，这一块做的不好。  <BR>
+                osip_message_set_body (answer, tmp, strlen(tmp));  <BR>
+                osip_message_set_content_type (answer, &quot;application/sdp&quot;);  <BR>
+              <BR>
+                eXosip_call_send_answer (je-&gt;tid, 200, answer);  <BR>
+                cout &lt;&lt; &quot;\n\t--&gt; send 200 over!&quot; &lt;&lt; endl;  <BR>
+            }  <BR>
+  <BR>
+            eXosip_unlock ();  <BR>
+          <BR>
+            // 显示出在 sdp 消息体中的 attribute 的内容,里面计划存放我们的信息  <BR>
+            cout &lt;&lt; &quot;\n\t--&gt; The INFO is :\n&quot; ;  <BR>
+            while (!osip_list_eol ( &amp;(remote_sdp-&gt;a_attributes), pos))  <BR>
+            {  <BR>
+                sdp_attribute_t *at;  <BR>
+              <BR>
+                //这里解释了为什么在SDP消息体中属性a里面存放必须是两列  <BR>
+                at = (sdp_attribute_t *) osip_list_get ( &amp;remote_sdp-&gt;a_attributes, pos);  <BR>
+                cout &lt;&lt; &quot;\n\t&quot; &lt;&lt; at-&gt;a_att_field   <BR>
+                     &lt;&lt; &quot; : &quot; &lt;&lt; at-&gt;a_att_value &lt;&lt; endl;  <BR>
+              <BR>
+                pos ++;  <BR>
+            }  <BR>
+            break;  <BR>
+  <BR>
+        case EXOSIP_CALL_ACK:  <BR>
+            cout &lt;&lt; &quot;\n\t--&gt; ACK recieved!\n&quot; &lt;&lt; endl;  <BR>
+            // printf (&quot;the cid is %s, did is %s\n&quot;, je-&gt;did, je-&gt;cid);   <BR>
+            break;  <BR>
+  <BR>
+        case EXOSIP_CALL_CLOSED:  <BR>
+            cout &lt;&lt; &quot;\n\t--&gt; the remote hold the session!\n&quot; &lt;&lt; endl;  <BR>
+            // eXosip_call_build_ack(dialog_id, &amp;ack);  <BR>
+            // eXosip_call_send_ack(dialog_id, ack);   <BR>
+            i = eXosip_call_build_answer (je-&gt;tid, 200, &amp;answer);  <BR>
+            if (i != 0)  <BR>
+            {  <BR>
+                printf (&quot;This request msg is invalid!Cann't response!\n&quot;);  <BR>
+                eXosip_call_send_answer (je-&gt;tid, 400, NULL);  <BR>
+            }  <BR>
+            else  <BR>
+            {  <BR>
+                eXosip_call_send_answer (je-&gt;tid, 200, answer);  <BR>
+                cout &lt;&lt; &quot;\n\t--&gt; bye send 200 over!\n&quot;;  <BR>
+            }   <BR>
+            break;  <BR>
+  <BR>
+        case EXOSIP_CALL_MESSAGE_NEW:  <BR>
+  <BR>
+            cout &lt;&lt; &quot;\n\t*** EXOSIP_CALL_MESSAGE_NEW\n&quot; &lt;&lt; endl;  <BR>
+            if (MSG_IS_INFO(je-&gt;request) ) // 如果传输的是 INFO 方法  <BR>
+            {  <BR>
+                eXosip_lock ();  <BR>
+                i = eXosip_call_build_answer (je-&gt;tid, 200, &amp;answer);  <BR>
+                if (i == 0)  <BR>
+                {  <BR>
+                    eXosip_call_send_answer (je-&gt;tid, 200, answer);  <BR>
+                }  <BR>
+  <BR>
+                eXosip_unlock ();  <BR>
+  <BR>
+                {  <BR>
+                    osip_body_t *body;  <BR>
+                    osip_message_get_body (je-&gt;request, 0, &amp;body);  <BR>
+                    cout &lt;&lt; &quot;the body is &quot; &lt;&lt; body-&gt;body &lt;&lt; endl;  <BR>
+                }  <BR>
+            }  <BR>
+            break;   <BR>
+  <BR>
+        default:  <BR>
+            cout &lt;&lt; &quot;\n\t--&gt; Could not parse the msg!\n&quot; &lt;&lt; endl;  <BR>
+        }  <BR>
+    }   <BR>
+  <BR>
+    return 0;  <BR>
+}  
+</DD>
+<DT>exosip2文档</DT>
+<!--property:date_created=1515731524-->
+<!--property:date_modified=1515738900-->
+<DD>
+libeXosip2文档<BR>
+<BR>
+1.想要用eXosip服务，你的首要任务是要先初始化eXosip内容和libosip库（解析状态机），这必须要在所有操作之前做的事<BR>
+<BR>
+同样你必须在交换层，选择一种协议（UDP, TCP，TLS或者是DTLS）<BR>
+<BR>
+下面便是基本的一些操作<BR>
+1.1     初始化跟踪信息<BR>
+#include &lt;eXosip2/eXosip.h&gt;<BR>
+<BR>
+eXosip *ctx;<BR>
+int i  = 0;<BR>
+int port = 5060;<BR>
+TRACE_INITIALIZE(6, NULL);<BR>
+<BR>
+1.2    初始化eXosip(和osip)栈<BR>
+ctx = eXosip_malloc();<BR>
+if(ctx == NULL)<BR>
+return -1;<BR>
+<BR>
+i = eXosip_init(ctx);<BR>
+if(i != 0)<BR>
+return -1;<BR>
+<BR>
+1.3  打开一个UDP socket接收信号<BR>
+i = eXosip_listen_addr (ctx, IPPROTO_UDP, NULL, port, AF_INET, 0);<BR>
+if (i!=0)<BR>
+  {<BR>
+    eXosip_quit(ctx);<BR>
+    fprintf (stderr, &quot;could not initialize transport layer\n&quot;);<BR>
+    return -1;<BR>
+  }<BR>
+<BR>
+/*<BR>
+还可以选择其他协议<BR>
+UDP:<BR>
+i = eXosip_listen_addr (ctx, IPPROTO_UDP, NULL, 5060, AF_INET, 0);<BR>
+TCP:<BR>
+i = eXosip_listen_addr (ctx, IPPROTO_TCP, NULL, 5060, AF_INET, 0);<BR>
+TLS:<BR>
+i = eXosip_listen_addr (ctx, IPPROTO_TCP, NULL, 5061, AF_INET, 1);<BR>
+DTLS:<BR>
+i = eXosip_listen_addr (ctx, IPPROTO_UDP, NULL, 5061, AF_INET, 1);<BR>
+*/<BR>
+<BR>
+选择TLS协议可能需要特殊的设置，TLS实际上引入了两个有趣的特性:<BR>
+<BR>
+使用certiticates和钥匙，它有助于信任/验证远程服务器<BR>
+它还加密数据，以便中间没有人能够读取SIP流量。<BR>
+<BR>
+如果你不需要服务器验证，TLS很容易安装。您不需要配置任何证书、密钥或根证书…<BR>
+下面对的代码就是用来取消服务器证书验证的<BR>
+<BR>
+int val = 0；<BR>
+i = eXosip_set_option(ctx, EX_OSIP_OTP_SET_TLS_VERIFY_CERTIFICATE, (void*) &amp;val);<BR>
+<BR>
+如果需要验证，还需要做一些工作。您需要的取决于您的平台/操作系统。<BR>
+<BR>
+在windows上注册：<BR>
+在Windows中，使用“Windows证书存储具有内置的支持”。因此，你只需要添加你的证书和密钥在官方的Windows证书存储”。<BR>
+<BR>
+在mac上注册：<BR>
+在MacOSX，exosip为证书存储的内置支持<BR>
+<BR>
+在其他平台注册：<BR>
+eXosip_tls_ctx_t = tls_info;<BR>
+memset(&amp;tls_info, 0, sizeof(eXosip_tls_ctx_t));<BR>
+snprintf(tls_info.client.cert, sizeof(tls_info.client.cert), &quot;user-cert.crt&quot;);<BR>
+snprintf(tls_info.client.priv_key, sizeof(tls_info.client.priv_key), &quot;user-privkey.crt&quot;);<BR>
+snprintf(tls_info.client.priv_key_pw, sizeof(tls_info.client.priv_key_pw), &quot;password&quot;);<BR>
+snprintf(tls_info.root_ca_cert, sizeof(tls_info.root_ca_cert), &quot;cacert.crt&quot;);<BR>
+<BR>
+i = eXosip_set_option (ctx, EXOSIP_OPT_SET_TLS_CERTIFICATES_INFO, (void*)&amp;tls_info);<BR>
+<BR>
+1.4 额外需要初始化的一些设置<BR>
+一些选项可以被修改，但是大部分最好还是用默认设置，如果您的SIP服务配置正确，则不需要超出缺省值的设置。<BR>
+下面是一些宏<BR>
+EXOSIP_OPT_UDP_KEEP_ALIVE 1<BR>
+EXOSIP_OPT_UDP_LEARN_PORT 2<BR>
+EXOSIP_OPT_USE_RPORT 7<BR>
+EXOSIP_OPT_SET_IPV4_FOR_GATEWAY 8<BR>
+EXOSIP_OPT_ADD_DNS_CACHE 9<BR>
+EXOSIP_OPT_DELETE_DNS_CACHE 10<BR>
+EXOSIP_OPT_SET_IPV6_FOR_GATEWAY 12<BR>
+EXOSIP_OPT_ADD_ACCOUNT_INFO 13<BR>
+EXOSIP_OPT_DNS_CAPABILITIES 14<BR>
+EXOSIP_OPT_SET_DSCP 15<BR>
+EXOSIP_OPT_REGISTER_WITH_DATE 16<BR>
+EXOSIP_OPT_SET_HEADER_USER_AGENT 17<BR>
+EXOSIP_OPT_SET_TLS_VERIFY_CERTIFICATE 500<BR>
+EXOSIP_OPT_SET_TLS_CERTIFICATES_INFO 501<BR>
+EXOSIP_OPT_SET_TLS_CLIENT_CERTIFICATE_NAME 502<BR>
+EXOSIP_OPT_SET_TLS_SERVER_CERTIFICATE_NAME 503<BR>
+<BR>
+下面是一个基本配置，可能适合于常规配置：<BR>
+int val;<BR>
+eXosip_set_user_agent (ctx, &quot;exosipdemo/0.0.0&quot;);<BR>
+val=17000;<BR>
+eXosip_set_option (ctx, EXOSIP_OPT_UDP_KEEP_ALIVE, (void*)&amp;val);<BR>
+val=2;<BR>
+eXosip_set_option (ctx, EXOSIP_OPT_DNS_CAPABILITIES, (void*)&amp;val);<BR>
+val=1;<BR>
+eXosip_set_option (ctx, EXOSIP_OPT_USE_RPORT, (void*)&amp;val);<BR>
+val=26;<BR>
+eXosip_set_option (ctx, EXOSIP_OPT_SET_DSCP, (void*)&amp;dscp_value);<BR>
+eXosip_set_option (ctx, EXOSIP_OPT_SET_IPV4_FOR_GATEWAY, &quot;sip.antisip.com&quot;);<BR>
+<BR>
+NAT和联系人报头<BR>
+这里需要特殊强调，大部分的exosip2栈本身无关…<BR>
+<BR>
+使用SIP最重要的特性是能够接收SIP请求。如果你的手机保持沉默，你不会高兴的。然而，在理论上无法猜测哪些内容应该包含我们正在创建的联络头。<BR>
+<BR>
+大多数代理将修理断了联系，不管为什么exosip2或SIP的应用提供了一个错误的价值。SIP规范对各种客户机和服务器行为的联系验证不很清楚。<BR>
+<BR>
+然而：<BR>
+        1.没关系，什么exosip2代理将修复，最正确。<BR>
+	2.不管你认为什么是正确的，有些人认为另一种方式是正确的。<BR>
+	3。无论SIP、代理和人员：网络规则总是首先应用！；<BR>
+	<BR>
+<BR>
+无论如何，去避免以下问题<BR>
+       1.你应该尽自己所能去提供正确的消息在联系上	，你应该尽最大努力把正确的信息联系起来。<BR>
+	2.大多数情况下，你不能，但无论如何都应该有效。<BR>
+	<BR>
+结论：<BR>
+	1.没有任何配置（NAT，眩晕等），您的代理应该能够找到如何到达您（在现有的连接）<BR>
+	2.如果它不能（不管什么原因），你可以尝试的解决方法和选择。<BR>
+	<BR>
+解决方法：<BR>
+此选项有助于exosip2检测是当你有几个因素：（例如VPN和eth0）。这将有助于检测是通过接触。通常的参数是代理。（谨慎：由于DNS操作，方法可能会阻塞）<BR>
+<BR>
+eXosip_set_option(ctx, EXOSIP_OPT_SET_IPV4_FOR_GATEWAY, &quot;sip.antisio.com&quot;);<BR>
+<BR>
+伪装：当发送你的第一个SIP请求（登记？选择？）上面的答案，通过将包含“接受”和“报告”参数：那些IP /端口是你接触代理头所需的精确的。眩晕将检测类似的IP /端口，但另一个目的地（眩晕服务器）。因此，眩晕不是正确的方法。<BR>
+,这样，发送个请求给你的代理，验证方式是（发送还是请求）参数，使用伪装<BR>
+eXosip_masquerade_contact(ctx, &quot;91.121.81.212&quot;, 10456);<BR>
+<BR>
+exosip_opt_udp_learn_port选项：如果你想再通过“接收”和“报告”自动与UDP。使用下面的代码，第二个寄存器（在身份验证之后）？或第二输出请求将包含伪装接触头。如果你用STUN协议值伪装，它也应该被使用。<BR>
+<BR>
+eXosip_masquerade_contact (ctx, &quot;192.168.2.1&quot;, 5080); <BR>
+val=1;<BR>
+eXosip_set_option (ctx, EXOSIP_OPT_UDP_LEARN_PORT, &amp;val);<BR>
+<BR>
+EXOSIP_OPT_USE_RPORT选项：仅用破碎的NAT。在传出要求“报告”参数删除此选项。这应该永远不用。<BR>
+<BR>
+val=0;<BR>
+eXosip_set_option (ctx, EXOSIP_OPT_USE_RPORT, &amp;val);<BR>
+<BR>
+<BR>
+2	HANDLE eXosip2 events	(exosip2事件处理, eXosip_event_t)<BR>
+<BR>
+2.1 eXosip_event包含你所有需要的信息<BR>
+	rid: identifier for registrations.  （注册标识符）<BR>
+	tid: identifier for transactions.    （事物标识符）<BR>
+	cid, did identifiers for calls.         （调用标示符）<BR>
+	sid, did: identifier for outgoing subscriptions.  （传出订阅标识符）<BR>
+	nid, did: identifier for incoming subscriptions.  （传入订阅标识符）<BR>
+	request: outgoing or incoming request for the event  （事件出入栈请求）<BR>
+	answer: outgoing or incoming answer for the event   （事件出入应答）<BR>
+	ack: outgoing or incoming ACK for the event      (事件传入传出ACK)<BR>
+	<BR>
+	这些标示符，被重新用于相关exosip2 API，使他变得更简单更易于控制，回答和ACK是完全复制你可以访问，不需要对exosip2加锁<BR>
+	现在你必须要去处理exosip事件，这里是一些从eXosip2栈获取exosip事件的方法代码<BR>
+	eXosip_event_t *evt;<BR>
+	for(;;)<BR>
+	{<BR>
+		evt = eXosip_event_wait(ctx, 0, 50);<BR>
+		eXosip_lock(ctx);<BR>
+		eXosip_automatic_action(ctx);<BR>
+		eXosip_unlock(ctx);<BR>
+<BR>
+		if(evt == NULL)			<BR>
+			continue;<BR>
+		if(evt-&gt;type == EXOSIP_CALL_NEW)<BR>
+		{<BR>
+			...			<BR>
+		}<BR>
+		else if(evt-&gt;type == EXOSIP_CALL_ACK)<BR>
+		{<BR>
+			...		<BR>
+		}<BR>
+		else if(evt-&gt;type == EXOSIP_CALL_ANSWERED)<BR>
+		{<BR>
+			...		<BR>
+		}<BR>
+		else<BR>
+			....<BR>
+			<BR>
+		eXosip_event_free(evt);<BR>
+	}<BR>
+<BR>
+你没发送一个sip消息就会接受到一个事件，每个事件包含受影响事务的原始请求和可用时触发事件的最后响应。<BR>
+<BR>
+您可以访问这些消息的所有标头，并将它们存储在自己的上下文中，用于其他操作或图形显示。<BR>
+<BR>
+例如：<BR>
+	当你接受到一个REFER请求，请求呼叫转移，你通常会检索的”指的是“头：<BR>
+	<BR>
+	osip_header_t* referto_head = NULL;<BR>
+	i = osip_message_header_get_byname(evt-&gt;sip, &quot;refer-to&quot;, 0, &amp;referto_head);<BR>
+	if(referto_head == NULL || refferto_head-&gt;hvalue == NULL)<BR>
+	<BR>
+	接听180来电<BR>
+	if(evt-&gt;type == EXOSIP_CALL_NEW)<BR>
+	{<BR>
+		eXosip_lock(ctx);<BR>
+		eXosip_call_send_answer(ctx, evt-&gt;tid, 180, NULL);<BR>
+		eXosip_unlock(ctx);	<BR>
+	}<BR>
+<BR>
+	答案200确定来电：（同时检查在EVT的附件&gt;的要求！<BR>
+	<BR>
+	Answer 200 ok to an incoming MESSAGE:(also check the attachment in evt-&gt;request!)<BR>
+<BR>
+	if(evt-&gt;type == EXOSIP_MESSAGE_NEW &amp;&amp; osip_strcasecmp(minfo.method, &quot;MESSAGE&quot;) == 0)<BR>
+	{<BR>
+		osip_message_t *answer=NULL;<BR>
+		  int i;<BR>
+		  eXosip_lock (ctx);<BR>
+		  i = eXosip_message_build_answer (ctx, evt-&gt;tid, 200, &amp;answer);<BR>
+		  i = eXosip_message_send_answer (ctx, evt-&gt;tid, 200, answer);<BR>
+		  eXosip_unlock (ctx);<BR>
+	}<BR>
+<BR>
+	处理对话框里的入栈呼叫，（呼叫转移）<BR>
+	if (evt-&gt;type == EXOSIP_CALL_MESSAGE_NEW &amp;&amp; osip_strcasecmp (minfo.method, &quot;REFER&quot;) == 0)<BR>
+	 {<BR>
+		  osip_header_t *refer_to = NULL;<BR>
+		  eXosip_lock (ctx);<BR>
+		  i = eXosip_call_build_answer (ctx, evt-&gt;tid, 202, &amp;answer);<BR>
+		  i = eXosip_call_send_answer (ctx, evt-&gt;tid, 202, answer);<BR>
+		  i = osip_message_header_get_byname (evt-&gt;request, &quot;refer-to&quot;, 0, &amp;refer_to);<BR>
+		  if (i &gt;= 0) {<BR>
+		    printf (&quot;you must start call to: %s\n&quot;, refer_to-&gt;hvalue);<BR>
+		    ...<BR>
+		  }<BR>
+		  else {<BR>
+		  }<BR>
+		  eXosip_call_terminate (ctx, evt-&gt;cid, evt-&gt;did, 486);<BR>
+		  eXosip_unlock (ctx);<BR>
+	}<BR>
+<BR>
+<BR>
+<BR>
+
+</DD>
+</DL>
+
+</DD>
+<DT>相机连接流程</DT>
+<!--property:date_created=1515574729-->
+<!--property:date_modified=1515574790-->
+<DD>
+必须要素：<BR>
+<BR>
+1.      必须包含subject头域<BR>
+2.      SDP中session name必须填写Play<BR>
+3.      SDP中不能懈怠audio<BR>
+4.      SDP中的video必须携带PS属性<BR>
+<BR>
+以上4要素缺一不可。<BR>
+示例：<BR>
+<BR>
+1.      正确流程<BR>
+<BR>
+P1-&gt;IPC<BR>
+<BR>
+INVITEsip:34020000001320000001@192.168.50.171 SIP/2.0<BR>
+Via: SIP/2.0/UDP192.168.50.22:5060;branch=32dbcde3<BR>
+From: &quot;1001&quot;&lt;sip:1001@192.168.50.22&gt;;tag=591cf984<BR>
+Contact:&lt;sip:1001@192.168.50.22:5060&gt;<BR>
+To:&lt;sip:34020000001320000001@192.168.50.171&gt;<BR>
+Call-ID:14416987936de3e8ed55fe07400dcce022@1632a8c0<BR>
+CSeq: 172 INVITE<BR>
+Max-Forwards: 70<BR>
+Subject:34020000001320000001:0,1001:0<BR>
+Content-Type: application/sdp<BR>
+Content-Length: 381<BR>
+ <BR>
+v=0<BR>
+o=root 853265891 853265891 IN IP4192.168.50.22<BR>
+s=Play<BR>
+c=IN IP4 192.168.50.22<BR>
+t=0 0<BR>
+m=video 19690 RTP/AVP 126 125 99 34 96<BR>
+a=rtpmap:126 H264/90000<BR>
+a=fmtp:126 profile-level-id=42e01e<BR>
+a=rtpmap:125 H264S/90000<BR>
+a=fmtp:125 profile-level-id=42e01e<BR>
+a=rtpmap:99 MP4V-ES/90000<BR>
+a=fmtp:99 profile-level-id=3<BR>
+a=rtpmap:96 PS/90000<BR>
+ <BR>
+IPC-&gt;P1<BR>
+SIP/2.0 200 OK<BR>
+Via: SIP/2.0/UDP192.168.50.22:5060;branch=32dbcde3<BR>
+From: &quot;1001&quot;&lt;sip:1001@192.168.50.22&gt;;tag=591cf984<BR>
+To:&lt;sip:34020000001320000001@192.168.50.171&gt;;tag=1292444290<BR>
+Call-ID:14416987936de3e8ed55fe07400dcce022@1632a8c0<BR>
+CSeq: 172 INVITE<BR>
+Contact:&lt;sip:1005@192.168.50.171:5060&gt;<BR>
+Content-Type: application/sdp<BR>
+User-Agent: IP Camera<BR>
+Content-Length:   267<BR>
+ <BR>
+v=0<BR>
+o=1005 1935 1935 IN IP4 192.168.50.171<BR>
+s=play<BR>
+c=IN IP4 192.168.50.171<BR>
+t=0 0<BR>
+m=video 15060 RTP/AVP 96<BR>
+a=sendonly<BR>
+a=rtpmap:96 PS/90000<BR>
+ <BR>
+2.      不正确流程<BR>
+<BR>
+P1-&gt;IPC<BR>
+INVITEsip:34020000001320000001@192.168.50.171 SIP/2.0<BR>
+Via: SIP/2.0/UDP192.168.50.22:5060;branch=55b46723<BR>
+From: &quot;1001&quot;&lt;sip:1001@192.168.50.22&gt;;tag=1a72242e<BR>
+Contact: &lt;sip:1001@192.168.50.22:5060&gt;<BR>
+To:&lt;sip:34020000001320000001@192.168.50.171&gt;<BR>
+Call-ID:1441698966743435f475c5f89133b42b83@1632a8c0<BR>
+CSeq: 170 INVITE<BR>
+Max-Forwards: 70<BR>
+Subject:34020000001320000001:0,1001:0<BR>
+Content-Type: application/sdp<BR>
+Content-Length: 553<BR>
+ <BR>
+v=0<BR>
+o=root 1437886243 1437886243 IN IP4192.168.50.22<BR>
+s=Play<BR>
+c=IN IP4 192.168.50.22<BR>
+t=0 0<BR>
+m=audio38406 RTP/AVP 0 8 3 114 18<BR>
+a=rtpmap:0 PCMU/8000<BR>
+a=rtpmap:8 PCMA/8000<BR>
+a=rtpmap:3 GSM/8000<BR>
+a=rtpmap:114 AMR/8000<BR>
+a=fmtp:114 mode-set=7<BR>
+a=rtpmap:18 G729/8000<BR>
+m=video24674 RTP/AVP 126 125 99<BR>
+a=recvonly<BR>
+a=rtpmap:126 H264/90000<BR>
+a=fmtp:126 profile-level-id=42e01e<BR>
+a=rtpmap:125 H264S/90000<BR>
+a=fmtp:125 profile-level-id=42e01e<BR>
+a=rtpmap:99 MP4V-ES/90000<BR>
+a=fmtp:99 profile-level-id=3<BR>
+ <BR>
+ <BR>
+IPC-&gt;P1<BR>
+SIP/2.0 200 OK<BR>
+Via: SIP/2.0/UDP 192.168.50.22:5060;branch=55b46723<BR>
+From: &quot;1001&quot;&lt;sip:1001@192.168.50.22&gt;;tag=1a72242e<BR>
+To:&lt;sip:34020000001320000001@192.168.50.171&gt;;tag=2000948179<BR>
+Call-ID:1441698966743435f475c5f89133b42b83@1632a8c0<BR>
+CSeq: 170 INVITE<BR>
+Contact:&lt;sip:1005@192.168.50.171:5060&gt;<BR>
+Content-Type: application/sdp<BR>
+User-Agent: IP Camera<BR>
+Content-Length:   108<BR>
+ <BR>
+v=0<BR>
+o=1005 3764 3764 IN IP4 192.168.50.171<BR>
+s=play<BR>
+c=IN IP4 192.168.50.171<BR>
+t=0 0<BR>
+m=video 15060RTP/AVP
+</DD>
+</DL>
+</BODY>
+</HTML>
