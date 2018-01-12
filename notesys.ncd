@@ -1,5 +1,5 @@
 <!DOCTYPE NoteCase-File>
-<!--LastNote:10-->
+<!--LastNote:12-->
 <HTML>
 <HEAD>
 <meta content="text/html;charset=UTF-8" http-equiv="Content-Type">
@@ -768,7 +768,6 @@ bool Invite(pjsip_dialog *dlg, MediaContext mediaContext, string sdp)<BR>
 <DT>GB28181</DT>
 <!--property:date_created=1515740245-->
 <!--property:date_modified=1515740245-->
-<!--property:expanded-->
 <DD>
 <DL>
 <DT>平台接入</DT>
@@ -1753,6 +1752,82 @@ cv2.imwrite('./aaa.jpg',img)
 
 </DD>
 </DL>
+
+</DD>
+</DL>
+
+</DD>
+<DT>opencv</DT>
+<!--property:date_created=1515752319-->
+<!--property:date_modified=1515752319-->
+<!--property:expanded-->
+<DD>
+<DL>
+<DT>opencv编译</DT>
+<!--property:date_created=1515752333-->
+<!--property:date_modified=1515752900-->
+<DD>
+https://github.com/opencv/opencv_3rdparty/branches/all<BR>
+第三方库<BR>
+<BR>
+ffmpeg处理<BR>
+1.解压压缩文件，获得目录中的三个文件 ffmpeg_version.cmake/opencv_ffmpeg.dll/opencv_ffmpeg_64.dll<BR>
+<BR>
+复制到opencv/sources/3rdparty/ffmpeg目录下<BR>
+<BR>
+编辑 ffmpeg.cmake<BR>
+message(STATUS &quot;FFMPEG: Package successfully downloaded&quot;)<BR>
+include(${CMAKE_CURRENT_LIST_DIR}/ffmpeg_version.cmake)<BR>
+<BR>
+ipppicv配置<BR>
+解压文件<BR>
+创建文件夹<BR>
+unpack,解压得到的ippicv_win复制到新建的unpack中<BR>
+将downloader.cmake内容修改为<BR>
+#<BR>
+# The script downloads ICV package<BR>
+#<BR>
+# On return this will define:<BR>
+# OPENCV_ICV_PATH - path to unpacked downloaded package<BR>
+#<BR>
+<BR>
+function(_icv_downloader)<BR>
+  # Commit SHA in the opencv_3rdparty repo<BR>
+  set(IPPICV_BINARIES_COMMIT &quot;81a676001ca8075ada498583e4166079e5744668&quot;)<BR>
+  # Define actual ICV versions<BR>
+  if(APPLE)<BR>
+    set(OPENCV_ICV_PACKAGE_NAME &quot;ippicv_macosx_20151201.tgz&quot;)<BR>
+    set(OPENCV_ICV_PACKAGE_HASH &quot;4ff1fde9a7cfdfe7250bfcd8334e0f2f&quot;)<BR>
+    set(OPENCV_ICV_PLATFORM &quot;macosx&quot;)<BR>
+    set(OPENCV_ICV_PACKAGE_SUBDIR &quot;/ippicv_osx&quot;)<BR>
+  elseif(UNIX)<BR>
+    if(ANDROID AND NOT (ANDROID_ABI STREQUAL x86 OR ANDROID_ABI STREQUAL x86_64))<BR>
+      return()<BR>
+    endif()<BR>
+    set(OPENCV_ICV_PACKAGE_NAME &quot;ippicv_linux_20151201.tgz&quot;)<BR>
+    set(OPENCV_ICV_PACKAGE_HASH &quot;808b791a6eac9ed78d32a7666804320e&quot;)<BR>
+    set(OPENCV_ICV_PLATFORM &quot;linux&quot;)<BR>
+    set(OPENCV_ICV_PACKAGE_SUBDIR &quot;/ippicv_lnx&quot;)<BR>
+  elseif(WIN32 AND NOT ARM)<BR>
+    set(OPENCV_ICV_PACKAGE_NAME &quot;ippicv_windows_20151201.zip&quot;)<BR>
+    set(OPENCV_ICV_PACKAGE_HASH &quot;04e81ce5d0e329c3fbc606ae32cad44d&quot;)<BR>
+    set(OPENCV_ICV_PLATFORM &quot;windows&quot;)<BR>
+    set(OPENCV_ICV_PACKAGE_SUBDIR &quot;/ippicv_win&quot;)<BR>
+  else()<BR>
+    return() # Not supported<BR>
+  endif()<BR>
+<BR>
+  set(OPENCV_ICV_UNPACK_PATH &quot;${CMAKE_CURRENT_LIST_DIR}/unpack&quot;)<BR>
+  set(OPENCV_ICV_PATH &quot;${OPENCV_ICV_UNPACK_PATH}${OPENCV_ICV_PACKAGE_SUBDIR}&quot;)<BR>
+<BR>
+  message(STATUS &quot;ICV: Package successfully downloaded&quot;)<BR>
+  set(OPENCV_ICV_PATH &quot;${OPENCV_ICV_PATH}&quot; PARENT_SCOPE)<BR>
+endfunction()<BR>
+<BR>
+_icv_downloader()<BR>
+<BR>
+处理face_landmark_model.dat文件下载失败原因<BR>
+<BR>
 
 </DD>
 </DL>
