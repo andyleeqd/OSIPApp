@@ -1,5 +1,5 @@
 <!DOCTYPE NoteCase-File>
-<!--LastNote:12-->
+<!--LastNote:18-->
 <HTML>
 <HEAD>
 <meta content="text/html;charset=UTF-8" http-equiv="Content-Type">
@@ -1760,7 +1760,6 @@ cv2.imwrite('./aaa.jpg',img)
 <DT>opencv</DT>
 <!--property:date_created=1515752319-->
 <!--property:date_modified=1515752319-->
-<!--property:expanded-->
 <DD>
 <DL>
 <DT>opencv编译</DT>
@@ -1830,6 +1829,9 @@ _icv_downloader()<BR>
 <BR>
 
 </DD>
+<DT>New node</DT>
+<!--property:date_created=1516249394-->
+<!--property:date_modified=1516249394-->
 </DL>
 
 </DD>
@@ -1890,6 +1892,7 @@ CANCEL事务与INVITE事务都是逐跳事务，但是处理方法不同，路�
 <DT>osip</DT>
 <!--property:date_created=1515669641-->
 <!--property:date_modified=1515669654-->
+<!--property:expanded-->
 <DD>
 ares_platform.h,<BR>
 <BR>
@@ -2596,6 +2599,143 @@ eXosip_set_option (ctx, EXOSIP_OPT_USE_RPORT, &amp;val);<BR>
 
 </DD>
 </DL>
+
+</DD>
+<DT>rtp数据传输</DT>
+<!--property:date_created=1516249401-->
+<!--property:date_modified=1516249421-->
+<DD>
+可以通过生成SDP文件给播放器在指定端口接收数据播放,如果你不用动态调整编码器什么的就不用考虑另外发送RTCP.<BR>
+而且RTCP必须自己实现RTSP服务结合起来用,没有实现RTSP服务,就谈不上实现RTCP.<BR>
+<BR>
+具体H264字节流拆包和RTP封包方法如下:<BR>
+<BR>
+UINT MediaStreamH264::TransportData(PBYTE pData, UINT dataSize, int pts)<BR>
+{<BR>
+PBYTE p_buffer = pData;<BR>
+int	i_buffer = dataSize;<BR>
+<BR>
+UINT writeSize = 0;<BR>
+<BR>
+while( i_buffer &gt; 4 &amp;&amp; ( p_buffer[0] != 0 || p_buffer[1] != 0 || p_buffer[2] != 1 ) )<BR>
+{<BR>
+i_buffer--;<BR>
+p_buffer++;<BR>
+}<BR>
+<BR>
+/* Split nal units */<BR>
+while( i_buffer &gt; 4 )<BR>
+{<BR>
+int i_offset;<BR>
+int i_size = i_buffer;<BR>
+int i_skip = i_buffer;<BR>
+<BR>
+/* search nal end */<BR>
+for( i_offset = 4; i_offset+2 &lt; i_buffer ; i_offset++)<BR>
+{<BR>
+if( p_buffer[i_offset] == 0 &amp;&amp; p_buffer[i_offset+1] == 0 &amp;&amp; p_buffer[i_offset+2] == 1 )<BR>
+{<BR>
+/* we found another startcode */<BR>
+i_size = i_offset - ( p_buffer[i_offset-1] == 0 ? 1 : 0);<BR>
+i_skip = i_offset;<BR>
+break;<BR>
+} <BR>
+}<BR>
+/* TODO add STAP-A to remove a lot of overhead with small slice/sei/... */<BR>
+UINT iWrite = TransportH264Nal(p_buffer, i_size, pts, (i_size &gt;= i_buffer) );<BR>
+if (iWrite &gt; 0 )<BR>
+writeSize += iWrite;<BR>
+<BR>
+i_buffer -= i_skip;<BR>
+p_buffer += i_skip;<BR>
+}<BR>
+return writeSize;<BR>
+}<BR>
+<BR>
+UINT MediaStreamH264::TransportH264Nal(const PBYTE pNal, UINT nalSize, INT32 pts, BOOL isLast)<BR>
+{<BR>
+ATLock atlock(&amp;m_tlockRun);<BR>
+<BR>
+if (m_bRun == FALSE)<BR>
+return 0;<BR>
+<BR>
+if( nalSize &lt; 5 )<BR>
+return 0;<BR>
+<BR>
+UINT	mtu = m_nMTU;<BR>
+<BR>
+const int i_max = mtu - RTP_HEADER_SIZE; /* payload max in one packet */<BR>
+int i_nal_hdr;<BR>
+int i_nal_type;<BR>
+<BR>
+i_nal_hdr = pNal[3];<BR>
+i_nal_type = i_nal_hdr&amp;0x1f;<BR>
+<BR>
+string sps;<BR>
+string pps;<BR>
+<BR>
+if( i_nal_type == 7 || i_nal_type == 8 )<BR>
+{<BR>
+/* XXX Why do you want to remove them ? It will break streaming with <BR>
+* SPS/PPS change (broadcast) ? */<BR>
+return 0;<BR>
+}<BR>
+<BR>
+/* Skip start code */<BR>
+PBYTE p_data = pNal;<BR>
+int	i_data = nalSize;<BR>
+<BR>
+p_data += 3;<BR>
+i_data -= 3;<BR>
+<BR>
+int writeSize = 0;<BR>
+<BR>
+if( i_data &lt;= i_max )<BR>
+{<BR>
+/* Single NAL unit packet */<BR>
+//writeSize = m_pRtpTransport-&gt;SetRtpData(p_data, i_data, pts, isLast);<BR>
+writeSize = m_pRtpTransport-&gt;Write(p_data, i_data, m_nRtpPayloadType, pts, 0, isLast);<BR>
+if (writeSize &lt;= 0)<BR>
+return 0;<BR>
+return writeSize;<BR>
+}<BR>
+else<BR>
+{<BR>
+/* FU-A Fragmentation Unit without interleaving */<BR>
+const int i_count = ( i_data-1 + i_max-2 - 1 ) / (i_max-2);<BR>
+int i;<BR>
+<BR>
+p_data++;<BR>
+i_data--;<BR>
+<BR>
+for( i = 0; i &lt; i_count; i++ )<BR>
+{<BR>
+const int i_payload =  (i_data &lt; (i_max-2)) ? i_data : (i_max-2);<BR>
+const int nalSize = 2 + i_payload;<BR>
+<BR>
+m_Packet.ExtendBuffer(nalSize);<BR>
+<BR>
+/* FU indicator */<BR>
+m_Packet.m_pData[0] = 0x00 | (i_nal_hdr &amp; 0x60) | 28;<BR>
+/* FU header */<BR>
+m_Packet.m_pData[1] = ( i == 0 ? 0x80 : 0x00 ) | ( (i == i_count-1) ? 0x40 : 0x00 )  | i_nal_type;<BR>
+<BR>
+/* FU payload */<BR>
+memcpy( &amp;m_Packet.m_pData[2], p_data, i_payload );<BR>
+<BR>
+m_Packet.m_DataSize = nalSize;<BR>
+<BR>
+//int iWrite = m_pRtpTransport-&gt;SetRtpData(m_Packet.m_pData, m_Packet.m_DataSize, pts, isLast &amp;&amp; (i == i_count-1));<BR>
+int iWrite = m_pRtpTransport-&gt;Write(m_Packet.m_pData, m_Packet.m_DataSize, m_nRtpPayloadType, pts, 0, isLast &amp;&amp; (i == i_count-1));<BR>
+if (iWrite &gt; 0)<BR>
+writeSize += iWrite;<BR>
+<BR>
+i_data -= i_payload;<BR>
+p_data += i_payload;<BR>
+}<BR>
+}<BR>
+return writeSize;<BR>
+}<BR>
 
 </DD>
 <DT>相机连接流程</DT>
