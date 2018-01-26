@@ -1,5 +1,5 @@
 <!DOCTYPE NoteCase-File>
-<!--LastNote:25-->
+<!--LastNote:27-->
 <HTML>
 <HEAD>
 <meta content="text/html;charset=UTF-8" http-equiv="Content-Type">
@@ -3359,7 +3359,7 @@ void   YUV2RGB420(unsigned   char   *src,   unsigned   char   *dst_ori,   <BR>
 <DL>
 <DT>编译openh264</DT>
 <!--property:date_created=1516931551-->
-<!--property:date_modified=1516937088-->
+<!--property:date_modified=1516937295-->
 <DD>
 下载nasm<BR>
 <BR>
@@ -3374,7 +3374,20 @@ Windows 下用 VS2015+MSYS 一键编译 OpenH264<BR>
 2、你已经安装好了MSYS；<BR>
 3、你已经从 从github上下载了OpenH264 源码；https://github.com/cisco/openh264.git<BR>
 在源代码目录下建立BAT文件，build.bat，内容如下：<BR>
-call &quot;D:\Language\VS2015\VC\bin\vcvars32.bat&quot; set MSYS=D:\Language\MinGW32\msys\1.0\bin PATH=%MSYS%;%path% set INCLUDE=%INCLUDE% set LIB=%lib%  bash -c &quot;make OS=msvc&quot; pause
+call &quot;D:\Language\VS2015\VC\bin\vcvars32.bat&quot; set MSYS=D:\Language\MinGW32\msys\1.0\bin PATH=%MSYS%;%path% set INCLUDE=%INCLUDE% set LIB=%lib%  bash -c &quot;make OS=msvc&quot; pause<BR>
+<BR>
+<BR>
+    common.lib<BR>
+    console_common.lib<BR>
+    decoder.lib<BR>
+    encoder.lib<BR>
+    openh264.lib<BR>
+    openh264_dll.lib<BR>
+    processing.lib<BR>
+   Openh264.dll<BR>
+    h264dec.exe<BR>
+    h264enc.exe<BR>
+
 </DD>
 </DL>
 
@@ -3432,6 +3445,89 @@ vfw和dshow里的CODEC分别是通过fourcc码和guid机制寻找的,可以在�
  <BR>
 五、CoreAVC<BR>
      CoreCodec的CoreAVC高清H.264视频解码器是基于已经被用于AVCHD、蓝光光盘和HD-DVD中的MPEG-4 Part 10标准构建的。H.264是下一代的视频编码标准，而CoreAVC?是目前公认世界上最快的H.264软解码器。
+</DD>
+<DT>解码视频流</DT>
+<!--property:date_created=1516960692-->
+<!--property:date_modified=1516960712-->
+<DD>
+	<BR>
+	初始化<BR>
+	{<BR>
+	avcodec_register_all();<BR>
+		av_register_all();<BR>
+	AVCodecID avCodec;<BR>
+		switch(pvs-&gt;m_nCodec)<BR>
+		{<BR>
+		case VE_CODEC_ID_H264:<BR>
+			avCodec = AV_CODEC_ID_H264;<BR>
+			break;<BR>
+		case VE_CODEC_ID_MPEG4:<BR>
+			avCodec = AV_CODEC_ID_MPEG4;<BR>
+			break;<BR>
+		case VE_CODEC_ID_MJPEG:<BR>
+			avCodec = AV_CODEC_ID_MJPEG;<BR>
+			break;<BR>
+		default:<BR>
+			avCodec = (AVCodecID)pvs-&gt;m_nCodec;<BR>
+			break;<BR>
+		}<BR>
+		pvs-&gt;codec = avcodec_find_decoder(avCodec);<BR>
+		pvs-&gt;context = avcodec_alloc_context3(pvs-&gt;codec);<BR>
+		pvs-&gt;frame = av_frame_alloc();<BR>
+		av_init_packet(&amp;pvs-&gt;m_avPkt);<BR>
+		pvs-&gt;m_nCodecInitialed = 1;<BR>
+		avcodec_open2(pvs-&gt;context, pvs-&gt;codec,NULL);<BR>
+	}<BR>
+	memcpy(pvs-&gt;buffer_stream+pvs-&gt;buffer_pos,buff,size);<BR>
+	pvs-&gt;buffer_pos+=size;<BR>
+	<BR>
+	pvs-&gt;m_avPkt.data = (unsigned char*)pvs-&gt;buffer_stream + pvs-&gt;total_decode_len;<BR>
+	pvs-&gt;m_avPkt.size = pvs-&gt;buffer_pos;<BR>
+	<BR>
+	decode_len = avcodec_decode_video2(pvs-&gt;context, pvs-&gt;frame, &amp;got_picture, &amp;pvs-&gt;m_avPkt);<BR>
+	<BR>
+	if(decode_len &lt; 0 &amp;&amp; (pvs-&gt;first_frame))<BR>
+		{<BR>
+			pvs-&gt;buffer_pos = 0;<BR>
+			pvs-&gt;first_frame = false;<BR>
+		}<BR>
+		else if(decode_len &gt; 0)<BR>
+		{<BR>
+			if(pvs-&gt;m_pfnOnStreamReady != NULL)<BR>
+				pvs-&gt;m_pfnOnStreamReady(pvs-&gt;m_pUserData,pvs-&gt;buffer_stream+pvs-&gt;total_decode_len,decode_len,pvs-&gt;frame-&gt;key_frame==1?1:3);<BR>
+			//fwrite(pvs-&gt;buffer_stream+pvs-&gt;total_decode_len,decode_len,1,fp);<BR>
+<BR>
+			pvs-&gt;buffer_pos -= decode_len;<BR>
+			pvs-&gt;total_decode_len += decode_len;<BR>
+			pvs-&gt;m_avPkt.data = (unsigned char*)pvs-&gt;buffer_stream + pvs-&gt;total_decode_len + decode_len;<BR>
+			pvs-&gt;m_avPkt.size -= decode_len;<BR>
+		}<BR>
+<BR>
+		if(got_picture)<BR>
+		{<BR>
+			if(pvs-&gt;frame_rgb == NULL)<BR>
+			{<BR>
+				pvs-&gt;frame_rgb = av_frame_alloc();<BR>
+				int bytes = avpicture_get_size(AV_PIX_FMT_RGB24, pvs-&gt;context-&gt;width,pvs-&gt;context-&gt;height);<BR>
+				pvs-&gt;buffer_rgb=(uint8_t *)av_malloc(bytes);<BR>
+				avpicture_fill((AVPicture *)pvs-&gt;frame_rgb, pvs-&gt;buffer_rgb, AV_PIX_FMT_RGB24,pvs-&gt;context-&gt;width, pvs-&gt;context-&gt;height);<BR>
+			}<BR>
+<BR>
+			SwsContext *img_convert_ctx = sws_getContext(pvs-&gt;context-&gt;width,pvs-&gt;context-&gt;height,<BR>
+				pvs-&gt;context-&gt;pix_fmt,<BR>
+				pvs-&gt;context-&gt;width,pvs-&gt;context-&gt;height,<BR>
+				AV_PIX_FMT_BGR24,<BR>
+				SWS_FAST_BILINEAR, NULL, NULL, NULL);<BR>
+<BR>
+			sws_scale(img_convert_ctx, pvs-&gt;frame-&gt;data, <BR>
+				pvs-&gt;frame-&gt;linesize, 0, pvs-&gt;context-&gt;height, <BR>
+				pvs-&gt;frame_rgb-&gt;data, pvs-&gt;frame_rgb-&gt;linesize);<BR>
+<BR>
+			sws_freeContext(img_convert_ctx);<BR>
+<BR>
+			if(pvs-&gt;m_pfnOnRealRGBReady != NULL)<BR>
+				pvs-&gt;m_pfnOnRealRGBReady(pvs-&gt;m_pUserData,pvs-&gt;buffer_rgb,pvs-&gt;context-&gt;width,pvs-&gt;context-&gt;width*3,pvs-&gt;context-&gt;height);<BR>
+		}
 </DD>
 <DT>FTP</DT>
 <!--property:date_created=1516785432-->
