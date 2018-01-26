@@ -1,5 +1,5 @@
 <!DOCTYPE NoteCase-File>
-<!--LastNote:18-->
+<!--LastNote:25-->
 <HTML>
 <HEAD>
 <meta content="text/html;charset=UTF-8" http-equiv="Content-Type">
@@ -1892,7 +1892,6 @@ CANCEL事务与INVITE事务都是逐跳事务，但是处理方法不同，路�
 <DT>osip</DT>
 <!--property:date_created=1515669641-->
 <!--property:date_modified=1515669654-->
-<!--property:expanded-->
 <DD>
 ares_platform.h,<BR>
 <BR>
@@ -2598,7 +2597,69 @@ eXosip_set_option (ctx, EXOSIP_OPT_USE_RPORT, &amp;val);<BR>
 <BR>
 
 </DD>
+<DT>sip协议开发</DT>
+<!--property:date_created=1516346817-->
+<!--property:date_modified=1516346835-->
+<DD>
+rtp必须关闭
+</DD>
 </DL>
+
+</DD>
+<DT>USX协议</DT>
+<!--property:date_created=1516355397-->
+<!--property:date_modified=1516355406-->
+<DD>
+关见字:<BR>
+<BR>
+UDP UDX RTP,RUDP<BR>
+<BR>
+UDP可靠传输,UDP文件传输,P2P<BR>
+<BR>
+UDP文件传输<BR>
+<BR>
+ <BR>
+<BR>
+一种基于UDP的可靠传输协议-UDX<BR>
+<BR>
+ <BR>
+<BR>
+UDX作为一个新的协议,从研发到成功经力了相当长一段时间.<BR>
+<BR>
+http://topic.csdn.net/u/20091130/12/0ea2c403-b7bd-4b27-bc17-6e5b5cd4cd55.html<BR>
+<BR>
+http://bbs.gameres.com/showthread.asp?page=end&amp;threadid=154641<BR>
+<BR>
+ <BR>
+<BR>
+目前算法基本已经定型,以其稳定高效,接口封富得到了广大网友开发者好评!<BR>
+<BR>
+ <BR>
+<BR>
+UDX开发说明文档.<BR>
+<BR>
+UDX是完全基于标准c++开发的一套UDP传输库,类似TCP,是一种可靠传输算法.主要是兼顾TCP的可靠性和UDP的实时性.另外一个最重要的优势是算法的可控性.<BR>
+<BR>
+    UDX的目的是为了让开发人员更好更快的去开发开效率的UDP网络应用软件,UDX主要是以oo的概念来设计开发的,接口SDK形式提供,提供方法和事件模式,也提供API WIN32 DLL.activex,提供静态库,动态库版本.<BR>
+    UDX内置文件传输接口,支持UDP中转,P2P接口,流式,包式封装,大简化程序员的工作量,提供20多个实用的例子代码.根据其特点,可以用于文件传输,IM(www.commnetsoft.com),视频聊天,聊天室,视频监控等,当然还可以用在竟技类,rpg等游戏 中,根据实际情况决定<BR>
+  目前有windows版本和linux版本.<BR>
+ <BR>
+<BR>
+ <BR>
+<BR>
+经过本人及各位好友的测试,在传输效率上和QQ直传效率相当,在很多情况都是略胜QQ的文件传输.在效率和重传率方面优于开源的UDT,raknet,jrtp等库.<BR>
+<BR>
+ <BR>
+<BR>
+是UDP开发者的首选.<BR>
+<BR>
+ <BR>
+<BR>
+UDX的作者是野蛮人(QQ 24508609 MSN WPLLG@HOTMAIL.COM)<BR>
+<BR>
+<BR>
+http://blog.csdn.net/wwwllg/article/details/5883545<BR>
+<BR>
 
 </DD>
 <DT>rtp数据传输</DT>
@@ -2736,7 +2797,817 @@ p_data += i_payload;<BR>
 }<BR>
 return writeSize;<BR>
 }<BR>
+<DL>
+<DT>H264解析RGB</DT>
+<!--property:date_created=1516595541-->
+<!--property:date_modified=1516598575-->
+<DD>
+全局变量建在头文件里报重定义，一定要cpp里边，然后extern进去头文件<BR>
+<BR>
+void  PtzCamera::OnStreamReadyProc(void *pUserData, void* buff, long size, int frametype)<BR>
+{	<BR>
+	int got_picture = 0;<BR>
+	int decode_len = 0;<BR>
+<BR>
+	//写文件<BR>
+	//static FILE *file1 = fopen(&quot;10.avi&quot;, &quot;wb+&quot;);<BR>
+	//fwrite(buff, size, 1, file1);<BR>
+<BR>
+	//return;<BR>
+	PtzCamera* pvs = (PtzCamera*)pUserData;<BR>
+<BR>
+	pvs-&gt;m_tmtLastRecvVideo = time(NULL);<BR>
+<BR>
+	if (pvs-&gt;m_nDecode &lt; 0)<BR>
+	{<BR>
+		return;<BR>
+	}<BR>
+	if(pvs-&gt;m_nDecode == 1) /*由内部解码，内部解码出RGB图像通过OnRealRGBReady传出*/<BR>
+	{<BR>
+		if(pvs-&gt;m_pfnOnStreamReady != NULL)<BR>
+			pvs-&gt;m_pfnOnStreamReady(pvs-&gt;m_pUserData,buff,size,frametype);<BR>
+		return;<BR>
+	}<BR>
+<BR>
+	if (pvs-&gt;m_nCodec == VE_CODEC_ID_NONE)<BR>
+	{<BR>
+		return;<BR>
+	}<BR>
+<BR>
+	if(pvs-&gt;m_nFFmpegInitialed == 0)<BR>
+	{<BR>
+		//avcodec_init();<BR>
+		avcodec_register_all();<BR>
+		av_register_all();<BR>
+		pvs-&gt;m_nFFmpegInitialed = 1;<BR>
+	}<BR>
+<BR>
+	if(pvs-&gt;m_nCodecInitialed == 0 <BR>
+		&amp;&amp; pvs-&gt;m_nFFmpegInitialed == 1)<BR>
+	{<BR>
+		AVCodecID avCodec;<BR>
+		switch(pvs-&gt;m_nCodec)<BR>
+		{<BR>
+		case VE_CODEC_ID_H264:<BR>
+			avCodec = AV_CODEC_ID_H264;<BR>
+			break;<BR>
+		case VE_CODEC_ID_MPEG4:<BR>
+			avCodec = AV_CODEC_ID_MPEG4;<BR>
+			break;<BR>
+		case VE_CODEC_ID_MJPEG:<BR>
+			avCodec = AV_CODEC_ID_MJPEG;<BR>
+			break;<BR>
+		default:<BR>
+			avCodec = (AVCodecID)pvs-&gt;m_nCodec;<BR>
+			break;<BR>
+		}<BR>
+		pvs-&gt;codec = avcodec_find_decoder(avCodec);<BR>
+		pvs-&gt;context = avcodec_alloc_context3(pvs-&gt;codec);<BR>
+		pvs-&gt;frame = av_frame_alloc();<BR>
+		av_init_packet(&amp;pvs-&gt;m_avPkt);<BR>
+		pvs-&gt;m_nCodecInitialed = 1;<BR>
+		avcodec_open2(pvs-&gt;context, pvs-&gt;codec,NULL);<BR>
+	}<BR>
+<BR>
+	if(pvs-&gt;m_nCodecInitialed == 0)<BR>
+		return;<BR>
+<BR>
+	if(pvs-&gt;buffer_pos+size &gt; pvs-&gt;buffer_size)<BR>
+	{<BR>
+		uint8_t *temp = pvs-&gt;buffer_stream;<BR>
+		pvs-&gt;buffer_size = pvs-&gt;buffer_pos+size*2;			<BR>
+		pvs-&gt;buffer_stream = new uint8_t[pvs-&gt;buffer_size];<BR>
+		memcpy(pvs-&gt;buffer_stream,temp+pvs-&gt;total_decode_len,pvs-&gt;buffer_pos);<BR>
+		delete [] temp;<BR>
+	}<BR>
+<BR>
+	memcpy(pvs-&gt;buffer_stream+pvs-&gt;buffer_pos,buff,size);<BR>
+	pvs-&gt;buffer_pos+=size;<BR>
+	<BR>
+	pvs-&gt;m_avPkt.data = (unsigned char*)pvs-&gt;buffer_stream + pvs-&gt;total_decode_len;<BR>
+	pvs-&gt;m_avPkt.size = pvs-&gt;buffer_pos;<BR>
+<BR>
+		//static FILE *file2 = fopen(&quot;12.avi&quot;, &quot;wb+&quot; );<BR>
+		//fwrite(avPkt.data, avPkt.size, 1, file2);<BR>
+<BR>
+	do<BR>
+	{<BR>
+		decode_len = avcodec_decode_video2(pvs-&gt;context, pvs-&gt;frame, &amp;got_picture, &amp;pvs-&gt;m_avPkt);<BR>
+<BR>
+		if(decode_len &lt; 0 &amp;&amp; (pvs-&gt;first_frame))<BR>
+		{<BR>
+			pvs-&gt;buffer_pos = 0;<BR>
+			pvs-&gt;first_frame = false;<BR>
+		}<BR>
+		else if(decode_len &gt; 0)<BR>
+		{<BR>
+			if(pvs-&gt;m_pfnOnStreamReady != NULL)<BR>
+				pvs-&gt;m_pfnOnStreamReady(pvs-&gt;m_pUserData,pvs-&gt;buffer_stream+pvs-&gt;total_decode_len,decode_len,pvs-&gt;frame-&gt;key_frame==1?1:3);<BR>
+			//fwrite(pvs-&gt;buffer_stream+pvs-&gt;total_decode_len,decode_len,1,fp);<BR>
+<BR>
+			pvs-&gt;buffer_pos -= decode_len;<BR>
+			pvs-&gt;total_decode_len += decode_len;<BR>
+			pvs-&gt;m_avPkt.data = (unsigned char*)pvs-&gt;buffer_stream + pvs-&gt;total_decode_len + decode_len;<BR>
+			pvs-&gt;m_avPkt.size -= decode_len;<BR>
+		}<BR>
+<BR>
+		if(got_picture)<BR>
+		{<BR>
+			if(pvs-&gt;frame_rgb == NULL)<BR>
+			{<BR>
+				pvs-&gt;frame_rgb = av_frame_alloc();<BR>
+				int bytes = avpicture_get_size(AV_PIX_FMT_RGB24, pvs-&gt;context-&gt;width,pvs-&gt;context-&gt;height);<BR>
+				pvs-&gt;buffer_rgb=(uint8_t *)av_malloc(bytes);<BR>
+				avpicture_fill((AVPicture *)pvs-&gt;frame_rgb, pvs-&gt;buffer_rgb, AV_PIX_FMT_RGB24,pvs-&gt;context-&gt;width, pvs-&gt;context-&gt;height);<BR>
+			}<BR>
+<BR>
+			SwsContext *img_convert_ctx = sws_getContext(pvs-&gt;context-&gt;width,pvs-&gt;context-&gt;height,<BR>
+				pvs-&gt;context-&gt;pix_fmt,<BR>
+				pvs-&gt;context-&gt;width,pvs-&gt;context-&gt;height,<BR>
+				AV_PIX_FMT_BGR24,<BR>
+				SWS_FAST_BILINEAR, NULL, NULL, NULL);<BR>
+<BR>
+			sws_scale(img_convert_ctx, pvs-&gt;frame-&gt;data, <BR>
+				pvs-&gt;frame-&gt;linesize, 0, pvs-&gt;context-&gt;height, <BR>
+				pvs-&gt;frame_rgb-&gt;data, pvs-&gt;frame_rgb-&gt;linesize);<BR>
+<BR>
+			sws_freeContext(img_convert_ctx);<BR>
+<BR>
+			if(pvs-&gt;m_pfnOnRealRGBReady != NULL)<BR>
+				pvs-&gt;m_pfnOnRealRGBReady(pvs-&gt;m_pUserData,pvs-&gt;buffer_rgb,pvs-&gt;context-&gt;width,pvs-&gt;context-&gt;width*3,pvs-&gt;context-&gt;height);<BR>
+		}<BR>
+	}<BR>
+	while(decode_len&gt;0);<BR>
+<BR>
+	if(pvs-&gt;total_decode_len &gt;= pvs-&gt;buffer_pos)<BR>
+	{<BR>
+		if(pvs-&gt;buffer_pos != 0)<BR>
+			memcpy(pvs-&gt;buffer_stream,pvs-&gt;buffer_stream+pvs-&gt;total_decode_len,pvs-&gt;buffer_pos);<BR>
+		pvs-&gt;total_decode_len = 0;<BR>
+	}<BR>
+}<BR>
+<BR>
+<BR>
+void  CYTControlDlg::CalcDisplayRect(LPRECT lpWndRect,int width, int height,CRect&amp; displayRect)<BR>
+{<BR>
+	CRect rectWnd(lpWndRect);<BR>
+<BR>
+	float a = (float)width/(float)height;<BR>
+	float b = (float)rectWnd.Width()/(float)rectWnd.Height();<BR>
+<BR>
+	if (a &gt; b)<BR>
+	{<BR>
+		if (width &gt; rectWnd.Width())<BR>
+		{<BR>
+			displayRect.left = rectWnd.left;<BR>
+			displayRect.right = rectWnd.right;<BR>
+			int c = (height*displayRect.Width())/width;<BR>
+			displayRect.top = rectWnd.top + (rectWnd.Height()-c)/2;<BR>
+			displayRect.bottom = displayRect.top+c;<BR>
+		}<BR>
+		else<BR>
+		{<BR>
+			displayRect.left =rectWnd.left + (rectWnd.Width()-width)/2;<BR>
+			displayRect.right = displayRect.left + width;<BR>
+			displayRect.top = rectWnd.top + (rectWnd.Height()-height)/2;<BR>
+			displayRect.bottom = displayRect.top + height;<BR>
+		}<BR>
+	}<BR>
+	else<BR>
+	{<BR>
+		if (height &gt; rectWnd.Height())<BR>
+		{<BR>
+			displayRect.top = rectWnd.top;<BR>
+			displayRect.bottom = displayRect.top+rectWnd.Height();<BR>
+			int c = (width*rectWnd.Height())/height;<BR>
+			displayRect.left = rectWnd.left + (rectWnd.Width()-c)/2;<BR>
+			displayRect.right = displayRect.left+c;<BR>
+		}<BR>
+		else<BR>
+		{<BR>
+			displayRect.top = rectWnd.top+(rectWnd.Height()-height)/2;<BR>
+			displayRect.bottom = displayRect.top + height;<BR>
+			displayRect.left = rectWnd.left + (rectWnd.Width()-width)/2;<BR>
+			displayRect.right = displayRect.left + width;<BR>
+		}<BR>
+	}<BR>
+}<BR>
+<BR>
+<BR>
+void  CYTControlDlg::DisplayRGB24(void* buff, int width,int storewidth, int height)<BR>
+{<BR>
+	if(m_rcDisplay.Width() == 0)<BR>
+	{<BR>
+		RECT  rcWnd;<BR>
+		rcWnd.left = 0;<BR>
+		rcWnd.top = 0;<BR>
+		rcWnd.right = m_rcDisplayWnd.Width();<BR>
+		rcWnd.bottom = m_rcDisplayWnd.Height();		<BR>
+<BR>
+		CalcDisplayRect(&amp;rcWnd,width,height,m_rcDisplay);<BR>
+	}<BR>
+<BR>
+	m_nImgWidth = width;<BR>
+	m_nImgHeight = height;<BR>
+<BR>
+<BR>
+	IplImage *pDigitVideoImage;<BR>
+	pDigitVideoImage = cvCreateImage(cvSize(width,height),8,3);<BR>
+	memcpy(pDigitVideoImage-&gt;imageData,buff,width*height*3);<BR>
+	ShowImage(pDigitVideoImage,IDC_VIDEO_WND);<BR>
+	<BR>
+	//测试录像功能结束<BR>
+	cvReleaseImage(&amp;pDigitVideoImage);<BR>
+	m_nFrameRateCount++;<BR>
+}
+</DD>
+</DL>
 
+</DD>
+<DT>Gradle</DT>
+<!--property:date_created=1516684902-->
+<!--property:date_modified=1516684914-->
+<DD>
+http://services.gradle.org/distributions/<BR>
+<BR>
+网上下载
+</DD>
+<DT>windows多线程笔记</DT>
+<!--property:date_created=1516775582-->
+<!--property:date_modified=1516777557-->
+<DD>
+1。防止多个线程同时修改同一块内存，导致的值得不可预见性<BR>
+1.增减操作<BR>
+LONG__cdeclInterlockedIncrement(LONG volatile* Addend);<BR>
+LONG__cdeclInterlockedDecrement(LONG volatile* Addend);<BR>
+<BR>
+返回变量执行增减操作之后的值。<BR>
+LONG__cdec InterlockedExchangeAdd(LONG volatile* Addend, LONGValue);<BR>
+返回运算后的值，注意！加个负数就是减。<BR>
+ <BR>
+2.赋值操作<BR>
+LONG__cdeclInterlockedExchange(LONG volatile* Target, LONGValue);<BR>
+<BR>
+DWORD WINAPI ThreadFun(void *pPM)  <BR>
+{  <BR>
+    Sleep(100);//some work should to do  <BR>
+    //g_nLoginCount++;  <BR>
+    InterlockedIncrement((LPLONG)&amp;g_nLoginCount);  <BR>
+    Sleep(50);  <BR>
+    return 0;  <BR>
+}  <BR>
+<BR>
+<BR>
+2.多线程同步-临界区的使用<BR>
+<BR>
+CRITICAL_SECTION lock<BR>
+<BR>
+函数功能：初始化<BR>
+函数原型：<BR>
+void InitializeCriticalSection(LPCRITICAL_SECTIONlpCriticalSection);<BR>
+函数说明：定义关键段变量后必须先初始化。<BR>
+ <BR>
+函数功能：销毁<BR>
+函数原型：<BR>
+void DeleteCriticalSection(LPCRITICAL_SECTIONlpCriticalSection);<BR>
+函数说明：用完之后记得销毁。<BR>
+ <BR>
+函数功能：进入关键区域<BR>
+函数原型：<BR>
+void EnterCriticalSection(LPCRITICAL_SECTIONlpCriticalSection);<BR>
+函数说明：系统保证各线程互斥的进入关键区域。<BR>
+ <BR>
+函数功能：离开关关键区域<BR>
+函数原型：<BR>
+void LeaveCriticalSection(LPCRITICAL_SECTIONlpCriticalSection);<BR>
+<BR>
+<BR>
+3.事件处理<BR>
+第一个 CreateEvent<BR>
+函数功能：创建事件<BR>
+函数原型：<BR>
+HANDLECreateEvent(<BR>
+ LPSECURITY_ATTRIBUTESlpEventAttributes,<BR>
+ BOOLbManualReset,<BR>
+ BOOLbInitialState,<BR>
+ LPCTSTRlpName<BR>
+);<BR>
+函数说明：<BR>
+第一个参数表示安全控制，一般直接传入NULL。<BR>
+第二个参数确定事件是手动置位还是自动置位，传入TRUE表示手动置位，传入FALSE表示自动置位。如果为自动置位，则对该事件调用WaitForSingleObject()后会自动调用ResetEvent()使事件变成未触发状态。打个小小比方，手动置位事件相当于教室门，教室门一旦打开（被触发），所以有人都可以进入直到老师去关上教室门（事件变成未触发）。自动置位事件就相当于医院里拍X光的房间门，门打开后只能进入一个人，这个人进去后会将门关上，其它人不能进入除非门重新被打开（事件重新被触发）。<BR>
+第三个参数表示事件的初始状态，传入TRUR表示已触发。<BR>
+第四个参数表示事件的名称，传入NULL表示匿名事件。<BR>
+<BR>
+ 第二个 OpenEvent<BR>
+函数功能：根据名称获得一个事件句柄。<BR>
+函数原型：<BR>
+HANDLEOpenEvent(<BR>
+ DWORDdwDesiredAccess,<BR>
+ BOOLbInheritHandle,<BR>
+ LPCTSTRlpName     //名称<BR>
+);<BR>
+函数说明：<BR>
+第一个参数表示访问权限，对事件一般传入EVENT_ALL_ACCESS。详细解释可以查看MSDN文档。<BR>
+第二个参数表示事件句柄继承性，一般传入TRUE即可。<BR>
+第三个参数表示名称，不同进程中的各线程可以通过名称来确保它们访问同一个事件。<BR>
+<BR>
+<BR>
+第三个SetEvent<BR>
+函数功能：触发事件<BR>
+函数原型：BOOLSetEvent(HANDLEhEvent);<BR>
+函数说明：每次触发后，必有一个或多个处于等待状态下的线程变成可调度状态。<BR>
+ <BR>
+第四个ResetEvent<BR>
+函数功能：将事件设为末触发<BR>
+函数原型：BOOLResetEvent(HANDLEhEvent);<BR>
+ <BR>
+最后一个事件的清理与销毁<BR>
+由于事件是内核对象，因此使用CloseHandle()就可以完成清理与销毁了。
+</DD>
+<DT>OpenH264</DT>
+<!--property:date_created=1516785001-->
+<!--property:date_modified=1516785076-->
+<!--property:expanded-->
+<DD>
+openH264解码流程<BR>
+<BR>
+之前项目中用过openH264进行解码，本文介绍一下解码流程，算是对之前项目的一个总结。<BR>
+<BR>
+同openH264编码一样，openH264的解码流程也主要分为3步： <BR>
+1：创建解码器。<BR>
+int result = WelsCreateDecoder(&amp;decoder);<BR>
+<BR>
+同样可以通过判断返回值来判断解码器是否创建成功。 <BR>
+2：初始化解码器。<BR>
+memset (&amp;pParam, 0, sizeof (SDecodingParam));<BR>
+pParam.uiTargetDqLayer = UCHAR_MAX;<BR>
+pParam.eEcActiveIdc = ERROR_CON_FRAME_COPY_CROSS_IDR;<BR>
+pParam.sVideoProperty.eVideoBsType = VIDEO_BITSTREAM_DEFAULT;<BR>
+result = decoder-&gt;Initialize(&amp;pParam);<BR>
+<BR>
+3：调用解码器开始解码。<BR>
+<BR>
+int stride[2] = {videoWidth, videoWidth/2};<BR>
+uint8_t* dst[3];<BR>
+memset (dst, 0, sizeof (dst));<BR>
+int result = decoder-&gt;DecodeFrame((const unsigned char*)src, length, dst, stride, videoWidth, videoHeight);<BR>
+<BR>
+解码后的数据存储在dst中，格式为YUV420P，如果需要其他格式的话，要进行格式转换。<BR>
+<BR>
+<BR>
+YUV420P转RGB32<BR>
+从网络摄像机中获取的帧数据是YUV420P格式的，而我们处理图像需要RGB格式，在网上找了一段将YUV420P格式的帧转换为RGB的代码。<BR>
+<BR>
+&lt;方法一&gt; 直接计算，效率低<BR>
+[cpp] view plaincopy<BR>
+// 转换 YV12 到 RGB24  <BR>
+// pYUV 的大小 (3 * iWidth * iHeight / 2)  <BR>
+// pRGB 的大小 (3 * iWidth * iHeight)  <BR>
+// 如果成功返回 true, 否则 false  <BR>
+bool YV12_to_RGB24(unsigned char* pYV12, unsigned char* pRGB24, int iWidth, int iHeight)  <BR>
+{  <BR>
+if(!pYV12 || !pRGB24)  <BR>
+return false;  <BR>
+  <BR>
+const long nYLen = long(iHeight * iWidth);  <BR>
+const int nHfWidth = (iWidth&gt;&gt;1);  <BR>
+  <BR>
+if(nYLen&lt;1 || nHfWidth&lt;1)   <BR>
+return false;  <BR>
+  <BR>
+// yv12数据格式，其中Y分量长度为width * height, U和V分量长度都为width * height / 4  <BR>
+// |WIDTH |  <BR>
+// y......y--------  <BR>
+// y......y HEIGHT  <BR>
+// y......y  <BR>
+// y......y--------  <BR>
+// v..v  <BR>
+// v..v  <BR>
+// u..u  <BR>
+// u..u  <BR>
+unsigned char* yData = pYV12;  <BR>
+unsigned char* vData = &amp;yData[nYLen];  <BR>
+unsigned char* uData = &amp;vData[nYLen&gt;&gt;2];  <BR>
+  <BR>
+if(!uData || !vData)  <BR>
+return false;  <BR>
+  <BR>
+// Convert YV12 to RGB24  <BR>
+//   <BR>
+// formula  <BR>
+// [1 1 1 ]  <BR>
+// [r g b] = [y u-128 v-128] [0 0.34375 0 ]  <BR>
+// [1.375 0.703125 1.734375]  <BR>
+// another formula  <BR>
+// [1 1 1 ]  <BR>
+// [r g b] = [y u-128 v-128] [0 0.698001 0 ]  <BR>
+// [1.370705 0.703125 1.732446]  <BR>
+int rgb[3];  <BR>
+int i, j, m, n, x, y;  <BR>
+m = -iWidth;  <BR>
+n = -nHfWidth;  <BR>
+for(y=0; y &lt; iHeight; y++)  <BR>
+{  <BR>
+m += iWidth;  <BR>
+if(!(y % 2))  <BR>
+n += nHfWidth;  <BR>
+for(x=0; x &lt; iWidth; x++)  <BR>
+{  <BR>
+i = m + x;  <BR>
+j = n + (x&gt;&gt;1);  <BR>
+rgb[2] = int(yData[i] + 1.370705 * (vData[j] - 128)); // r分量值  <BR>
+rgb[1] = int(yData[i] - 0.698001 * (uData[j] - 128) - 0.703125 * (vData[j] - 128)); // g分量值  <BR>
+rgb[0] = int(yData[i] + 1.732446 * (uData[j] - 128)); // b分量值  <BR>
+  <BR>
+j = nYLen - iWidth - m + x;  <BR>
+i = (j&lt;&lt;1) + j;  <BR>
+for(j=0; j&lt;3; j++)  <BR>
+{  <BR>
+if(rgb[j]&gt;=0 &amp;&amp; rgb[j]&lt;=255)  <BR>
+pRGB24[i + j] = rgb[j];  <BR>
+else  <BR>
+pRGB24[i + j] = (rgb[j] &lt; 0) ? 0 : 255;  <BR>
+}  <BR>
+}  <BR>
+}  <BR>
+return true;  <BR>
+}  <BR>
+<BR>
+在利用OpenCV进行处理时，如果直接将转换好的数据赋给IplImage-&gt;imageData，会出现红蓝通道对调的情况，因为OpenCV中默认使用的是BGR的排列方式。<BR>
+将代码中的给rgb复制的一段稍微改一下就行，改为：<BR>
+[cpp] view plaincopy<BR>
+rgb[0] = int(yData[i] + 1.370705 * (vData[j] - 128)); // r分量值  <BR>
+rgb[1] = int(yData[i] - 0.698001 * (uData[j] - 128) - 0.703125 * (vData[j] - 128)); // g分量值  <BR>
+rgb[2] = int(yData[i] + 1.732446 * (uData[j] - 128)); // b分量值  <BR>
+<BR>
+<BR>
+&lt;方法二&gt;查表，效率高<BR>
+[cpp] view plaincopy<BR>
+#include   &lt;string&gt;   <BR>
+#include   &lt;string.h&gt;   <BR>
+using   namespace   std;   <BR>
+  <BR>
+static   long   int   crv_tab[256];   <BR>
+static   long   int   cbu_tab[256];   <BR>
+static   long   int   cgu_tab[256];   <BR>
+static   long   int   cgv_tab[256];   <BR>
+static   long   int   tab_76309[256];   <BR>
+static   unsigned   char   clp[1024]; //for   clip   in   CCIR601   <BR>
+  <BR>
+  <BR>
+void   InitConvtTbl();   <BR>
+void   YUV2RGB420(unsigned   char   *src,   unsigned   char   *dst_ori,   <BR>
+    int   width,int   height);   <BR>
+  <BR>
+/****************************************************/   <BR>
+/* Sum   the   input */   <BR>
+/* Input:   input,   len */   <BR>
+/* Output:   input */   <BR>
+/* Algorithm:   add */   <BR>
+/****************************************************/   <BR>
+void   InitConvtTbl()   <BR>
+{   <BR>
+    long   int   crv,cbu,cgu,cgv;   <BR>
+    int   i,ind;         <BR>
+  <BR>
+    crv   =   104597;   cbu   =   132201;     /*   fra   matrise   i   global.h   */   <BR>
+    cgu   =   25675;     cgv   =   53279;   <BR>
+  <BR>
+    for   (i   =   0;   i   &lt;   256;   i++)   {   <BR>
+        crv_tab[i]   =   (i-128)   *   crv;   <BR>
+        cbu_tab[i]   =   (i-128)   *   cbu;   <BR>
+        cgu_tab[i]   =   (i-128)   *   cgu;   <BR>
+        cgv_tab[i]   =   (i-128)   *   cgv;   <BR>
+        tab_76309[i]   =   76309*(i-16);   <BR>
+    }   <BR>
+  <BR>
+    for   (i=0;   i &lt;384;   i++)   <BR>
+        clp[i]   =0;   <BR>
+    ind=384;   <BR>
+    for   (i=0;i &lt;256;   i++)   <BR>
+        clp[ind++]=i;   <BR>
+    ind=640;   <BR>
+    for   (i=0;i &lt;384;i++)   <BR>
+        clp[ind++]=255;   <BR>
+}  <BR>
+  <BR>
+void   YUV2RGB420(unsigned   char   *src,   unsigned   char   *dst_ori,   <BR>
+    int   width,int   height)   <BR>
+{   <BR>
+    unsigned   char   *src0;   <BR>
+    unsigned   char   *src1;   <BR>
+    unsigned   char   *src2;   <BR>
+    int   y1,y2,u,v;     <BR>
+    unsigned   char   *py1,*py2;   <BR>
+    int   i,j,   c1,   c2,   c3,   c4;   <BR>
+    unsigned   char   *d1,   *d2,   *d3;   <BR>
+  <BR>
+    //Initialization   <BR>
+    src0=src;   <BR>
+    src1=src+width*height;   <BR>
+    src2=src+width*height+width*height/4;   <BR>
+  <BR>
+    py1=src0;   <BR>
+    py2=py1+width;   <BR>
+    d1=dst_ori + 3 * width * (height -1);   <BR>
+    d2=d1-3*width;   <BR>
+    for   (j   =   0;   j   &lt;   height;   j   +=   2)   {     <BR>
+        for   (i   =   0;   i   &lt;   width;   i   +=   2)   {   <BR>
+  <BR>
+            u   =   *src1++;   <BR>
+            v   =   *src2++;   <BR>
+  <BR>
+            c1   =   crv_tab[v];   <BR>
+            c2   =   cgu_tab[u];   <BR>
+            c3   =   cgv_tab[v];   <BR>
+            c4   =   cbu_tab[u];   <BR>
+  <BR>
+            //up-left   <BR>
+            y1   =   tab_76309[*py1++];   <BR>
+            *d1++   =   clp[384+((y1   +   c4)&gt;&gt; 16)];       <BR>
+            *d1++   =   clp[384+((y1   -   c2   -   c3)&gt;&gt; 16)];   <BR>
+            *d1++   =   clp[384+((y1   +   c1)&gt;&gt; 16)];   <BR>
+  <BR>
+            //down-left   <BR>
+            y2   =   tab_76309[*py2++];   <BR>
+            *d2++   =   clp[384+((y2   +   c4)&gt;&gt; 16)];       <BR>
+            *d2++   =   clp[384+((y2   -   c2   -   c3)&gt;&gt; 16)];   <BR>
+            *d2++   =   clp[384+((y2   +   c1)&gt;&gt; 16)];   <BR>
+  <BR>
+            //up-right   <BR>
+            y1   =   tab_76309[*py1++];   <BR>
+            *d1++   =   clp[384+((y1   +   c4)&gt;&gt; 16)];       <BR>
+            *d1++   =   clp[384+((y1   -   c2   -   c3)&gt;&gt; 16)];   <BR>
+            *d1++   =   clp[384+((y1   +   c1)&gt;&gt; 16)];   <BR>
+  <BR>
+            //down-right   <BR>
+            y2   =   tab_76309[*py2++];   <BR>
+            *d2++   =   clp[384+((y2   +   c4)&gt;&gt; 16)];       <BR>
+            *d2++   =   clp[384+((y2   -   c2   -   c3)&gt;&gt; 16)];   <BR>
+            *d2++   =   clp[384+((y2   +   c1)&gt;&gt; 16)];   <BR>
+        }   <BR>
+        d1   -=   3*width * 3;   <BR>
+        d2   -=   3*width * 3;   <BR>
+        py1+=       width;   <BR>
+        py2+=       width;   <BR>
+    }                 <BR>
+  <BR>
+  <BR>
+}   <BR>
+<BR>
+<BR>
+<DL>
+<DT>编译openh264</DT>
+<!--property:date_created=1516931551-->
+<!--property:date_modified=1516937088-->
+<DD>
+下载nasm<BR>
+<BR>
+设置环境变量<BR>
+export PATH = &quot;$PATH:/D:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin:/D:\Program Files (x86)\Microsoft Visual Studio 12.0\Common7\IDE&quot;<BR>
+export INCLUDE=&quot;D:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include;C:\Program Files (x86)\Windows Kits\8.0\Include\um;C:\Program Files (x86)\Windows Kits\8.0\Include\shared&quot;<BR>
+export LIB=&quot;C:\Program Files (x86)\Windows Kits\8.0\Lib\Win8\um\x64;D:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\lib\amd64&quot;<BR>
+<BR>
+Windows 下用 VS2015+MSYS 一键编译 OpenH264<BR>
+前提条件:<BR>
+1、你已经安装好了VS2015；<BR>
+2、你已经安装好了MSYS；<BR>
+3、你已经从 从github上下载了OpenH264 源码；https://github.com/cisco/openh264.git<BR>
+在源代码目录下建立BAT文件，build.bat，内容如下：<BR>
+call &quot;D:\Language\VS2015\VC\bin\vcvars32.bat&quot; set MSYS=D:\Language\MinGW32\msys\1.0\bin PATH=%MSYS%;%path% set INCLUDE=%INCLUDE% set LIB=%lib%  bash -c &quot;make OS=msvc&quot; pause
+</DD>
+</DL>
+
+</DD>
+<DT>H264解码比较</DT>
+<!--property:date_created=1516930365-->
+<!--property:date_modified=1516930426-->
+<DD>
+JM86 decoder: vc71 release<BR>
+T264 decoder: vc71 release<BR>
+x264 decodeer: vc71 release<BR>
+ffmpeg libavcodec: MinGW<BR>
+Intel IPP simple player: vc71 release + directX 9.0c sdk<BR>
+<BR>
+<BR>
+http://blog.csdn.net/xy365/article/details/8424600<BR>
+排名分先后。<BR>
+一、ffmpeg<BR>
+    ffmpeg属于GPL或者LGPL，确切属于哪一种，要根据编译选项，因为它里面的库有些属于GPL的有些属于LGPL的，你编译的时候打开或者关闭这些库的选项，就决定了它属于哪一种。<BR>
+http://www.ffmpeg.org/legal.html<BR>
+ffmpeg项目由以下几部分组成:<BR>
+ffmpeg 视频文件转换命令行工具,也支持经过实时电视卡抓取和编码成视频文件.<BR>
+ffserver 基于HTTP(RTSP正在开发中)用于实时广播的多媒体服务器.也支持时间平移<BR>
+ffplay 用 SDL和FFmpeg库开发的一个简单的媒体播放器<BR>
+libavcodec 一个包含了所有FFmpeg音视频编解码器的库.为了保证最优性能和高可复用性,大多数编解码器从头开发的.<BR>
+libavformat 一个包含了所有的普通音视格式的解析器和产生器的库.<BR>
+ <BR>
+二、Xvid<BR>
+     Xvid（旧称为XviD）是一个开放源代码的MPEG-4视频编解码器，它是基于OpenDivX而编写的。官方网站：www.xvid.org<BR>
+ <BR>
+三、X264<BR>
+    X264是一种免费的、具有更优秀算法的符合H.264/MPEG-4 AVC视频压缩编码标准格式的编码库。x264压缩出的视频文件在相同质量下要比xvid压缩出的文件要小，或者也可以说，在相同体积下比xvid压缩出的文件质量要好。它符合GPL（General Public License，是一份GNU通用公共授权）许可证。X264属于videolan开源工程的一部分。http://www.videolan.org/developers/x264.html<BR>
+　　采用CAVLC/CABAC多种算法编码<BR>
+　　内置所有macroblock格式（16x16, 8x8, and 4x4 ）<BR>
+　　Inter P：所有的分割块（从16x16到4x4 ）<BR>
+　　Inter B：分割块从16x16到8x8<BR>
+　　码率控制：恒定的分层编制，单次或多次的ABR压制，可选的VBV压制<BR>
+　　场景剪切侦测<BR>
+　　支持B-frame<BR>
+　　能够任意编制B-frame命令行<BR>
+　　无损模式<BR>
+　　8x8和4x4的格式能够进行翻转或旋转<BR>
+　　自定义精确的矩阵模板<BR>
+　　可在多个CPU平行编码<BR>
+　　隔行扫描<BR>
+ <BR>
+    X264只提供编码，不提供解码。 解码部分需要FFMPEG完成；XVID有编解码部分，其中解码亦可以利用FFMPEG中的MPEG4完成解码。<BR>
+ <BR>
+四、ffdshow<BR>
+    ffdshow是对一些codec（ffmpeg, xvid， and other）的封装，封装成了DirectShow和VFW的标准组件。该库（软件）只能在windows平台运行，是属于GPL<BR>
+比如对于xvid来讲，ffdshow是可以选择具体使用那个codec的，ffmpeg(libavcodec) or xvid。那么封装有没有额外的成本哪？有，但对大部分应用来讲，可以忽略不计。就如c++和c。<BR>
+vfw和dshow里的CODEC分别是通过fourcc码和guid机制寻找的,可以在系统注册codec后调用,比自带编解码库形式更加统一,便于使用。此外，vfw和dshow是代表了两个微软不同时期的音视频处理封装库，里面包含了音视频驱动，音视频处理的一整套方案。<BR>
+    DirectShow是微软公司在ActiveMovie和Video for Windows的基础上推出的新一代基于COM的流媒体处理的开发包，与DirectX开发包一起发布。目前，DirectX最新版本为9.0。 DirectShow为多媒体流的捕捉和回放提供了强有力的支持。运用DirectShow，我们可以很方便地从支持WDM驱动模型的采集卡上捕获数据， 并且进行相应的后期处理乃至存储到文件中。这样使在多媒体数据库管理系统（MDBMS）中多媒体数据的存取变得更加方便。DirectShow是微软公司 提供的一套在Windows平台上进行流媒体处理的开发包，与DirectX开发包一起发布。运用DirectShow，我们可以很方便地从支持WDM驱动模型的采集卡上捕获数据，并且进行相应的后期处理乃至存储到文件中。它广泛地支持各种媒体格 式，包括Asf、Mpeg、Avi、Dv、Mp3、Wave等等，使得多媒体数据的回放变得轻而易举。另外，DirectShow还集成了DirectX 其它部分（比如DirectDraw、DirectSound）的技术，直接支持DVD的播放，视频的非线性编辑，以及与数字摄像机的数据交换。<BR>
+    vfw（Video For Windows）<BR>
+ <BR>
+五、CoreAVC<BR>
+     CoreCodec的CoreAVC高清H.264视频解码器是基于已经被用于AVCHD、蓝光光盘和HD-DVD中的MPEG-4 Part 10标准构建的。H.264是下一代的视频编码标准，而CoreAVC?是目前公认世界上最快的H.264软解码器。
+</DD>
+<DT>FTP</DT>
+<!--property:date_created=1516785432-->
+<!--property:date_modified=1516785438-->
+<!--property:expanded-->
+<DD>
+C<DL>
+<DT>C#获取网络文件夹文件</DT>
+<!--property:date_created=1516785440-->
+<!--property:date_modified=1516785458-->
+<DD>
+我在之前做过一个FTP的客户端工具。<BR>
+drw   文件夹<BR>
+-rw    文件（有扩展名或无扩展名）<BR>
+我是根据服务端返回的报文进行分析获取的列表。<BR>
+给你一些代码片段：<BR>
+/// &lt;summary&gt;<BR>
+        /// 获取指定目录下的文件和文件夹。<BR>
+        /// &lt;/summary&gt;<BR>
+        /// &lt;param name=&quot;path&quot;&gt;要获取的目录&lt;/param&gt;<BR>
+        /// &lt;param name=&quot;WRMethods&quot;&gt;要发送到FTP服务器的密令。&lt;/param&gt;<BR>
+        /// &lt;returns&gt;&lt;/returns&gt;<BR>
+        public string[] GetFileList(string path, string WRMethods)//从ftp服务器上获得文件列表<BR>
+        {<BR>
+            WebResponse response;<BR>
+            string[] downloadFiles;<BR>
+            int conut = 4;<BR>
+            StringBuilder result = new StringBuilder();<BR>
+            Connect(path);<BR>
+            if (FTPVariable.IsUseProxy_ftp)<BR>
+            {<BR>
+                reqFTP.Proxy = FtpProxy.GetFtpSelectProxy(FTPVariable.FtpCommand_transferProxyName);<BR>
+            }<BR>
+            reqFTP.ReadWriteTimeout = 12000;<BR>
+            //如果不应销毁到服务器的连接，则为 true；否则为 false。默认值为 true。<BR>
+            //<BR>
+            reqFTP.Method = WRMethods;<BR>
+            try<BR>
+            {<BR>
+                response = (FtpWebResponse)reqFTP.GetResponse();<BR>
+                goto Ftp_lbl_03;<BR>
+            }<BR>
+            catch (WebException webex)<BR>
+            {<BR>
+                GetReply(webex.Message);<BR>
+                if (ReplyCode == 530)// 未登录。<BR>
+                {<BR>
+                    goto Ftp_lbl_04;<BR>
+                }<BR>
+                else if (ReplyCode == 550)<BR>
+                {<BR>
+                    goto Ftp_lbl_04;<BR>
+                }<BR>
+                else<BR>
+                {<BR>
+                    FtpManage.SetLog(&quot;获取列表超时,等候1秒后重试!&quot;);<BR>
+                    goto Ftp_lbl_01;<BR>
+                }<BR>
+            }<BR>
+        Ftp_lbl_01:<BR>
+            try<BR>
+            {<BR>
+                FtpManage.SetLog(&quot;正在连接服务器 &quot; + FtpRemoteHost);<BR>
+                response = GetRequest(path, WRMethods);<BR>
+            }<BR>
+            catch (WebException)<BR>
+            {<BR>
+                FtpManage.SetLog(&quot;获取列表超时,等候1秒后重试!&quot;);<BR>
+                downloadFiles = null;<BR>
+                System.Threading.Thread.Sleep(1000);<BR>
+                if (conut == 0)<BR>
+                {<BR>
+                    goto Ftp_lbl_02;<BR>
+                }<BR>
+                conut--;<BR>
+                goto Ftp_lbl_01;<BR>
+            }<BR>
+            catch (Exception ex)<BR>
+            {<BR>
+                MSG.Show(ex.Message, Global.GetRS[&quot;msgTilteError&quot;], MessageBoxButton.OK, MsgIco.Error);<BR>
+                FtpManage.SetLog(&quot;命令执行失败,原因:&quot; + ex.Message);<BR>
+                downloadFiles = null;<BR>
+                return downloadFiles;<BR>
+            }<BR>
+        Ftp_lbl_03:<BR>
+            StreamReader reader = new StreamReader(response.GetResponseStream(), System.Text.Encoding.Default);//中文文件名<BR>
+            string line = reader.ReadLine();<BR>
+            while (line != null)<BR>
+            {<BR>
+                result.Append(line);<BR>
+                result.Append(&quot;\n&quot;);<BR>
+                line = reader.ReadLine();<BR>
+            }<BR>
+            if (result.Length == 0)<BR>
+            {<BR>
+                return null;<BR>
+            }<BR>
+            // to remove the trailing '\n'<BR>
+            result.Remove(result.ToString().LastIndexOf('\n'), 1);<BR>
+            reader.Close();<BR>
+            response.Close();<BR>
+            FtpManage.SetLog(&quot;命令已成功执行&quot;);<BR>
+            return result.ToString().Split('\n');<BR>
+        Ftp_lbl_04:<BR>
+            FtpManage.SetLog(ReplyInfo);<BR>
+            return null;<BR>
+        Ftp_lbl_02:<BR>
+            FtpManage.SetLog(&quot;550 获取列表失败,无法连接远程服务器!&quot;);<BR>
+            FtpManage.ftpmanage.IsRefurbish = true;<BR>
+            return null;<BR>
+        }<BR>
+/// &lt;summary&gt;<BR>
+        /// 获取指定目录下的文件和文件夹。<BR>
+        /// &lt;/summary&gt;<BR>
+        /// &lt;param name=&quot;path&quot;&gt;要获取的目录&lt;/param&gt;<BR>
+        /// &lt;returns&gt;&lt;/returns&gt;<BR>
+        public string[] GetFileList(string path)//从ftp服务器上获得文件列表<BR>
+        {<BR>
+            return GetFileList(FTPVariable.FtpURLhead + FtpRemoteHost + &quot;/&quot; + path, WebRequestMethods.Ftp.ListDirectory);<BR>
+        }<BR>
+        /// &lt;summary&gt;<BR>
+        /// 获取指定目录下的文件和文件夹。<BR>
+        /// &lt;/summary&gt;<BR>
+        /// &lt;returns&gt;&lt;/returns&gt;<BR>
+        public string[] GetFileList()//从ftp服务器上获得文件列表<BR>
+        {<BR>
+            return GetFileList(FTPVariable.FtpURLhead + FtpRemoteHost + &quot;/&quot;, WebRequestMethods.Ftp.ListDirectory);<BR>
+        }<BR>
+        /// &lt;summary&gt;<BR>
+        /// 获取目录和文件名,返回目录表。<BR>
+        /// &lt;/summary&gt;<BR>
+        /// &lt;param name=&quot;path&quot;&gt;要获取的目录&lt;/param&gt;<BR>
+        /// &lt;returns&gt;&lt;/returns&gt;<BR>
+        public string[] GetCatalog_FileList(string path)<BR>
+        {<BR>
+            string[] fountainhead = GetFileList(FTPVariable.FtpURLhead + FtpRemoteHost + &quot;/&quot; + path, WebRequestMethods.Ftp.ListDirectoryDetails);<BR>
+            string[] Catalog = null;<BR>
+            if (fountainhead == null)<BR>
+            {<BR>
+                return null;<BR>
+            }<BR>
+            Catalog = new string[fountainhead.Length];<BR>
+            for (int i = 3; i &lt; fountainhead.Length; i++)<BR>
+            {<BR>
+                Catalog[i - 3] += fountainhead[i].Substring(55, fountainhead[i].Length - 55) + &quot;&amp;&quot;;//FileName<BR>
+                Catalog[i - 3] += fountainhead[i].Substring(30, 12) + &quot;&amp;&quot;;//FileSize<BR>
+                Catalog[i - 3] += fountainhead[i].Substring(42, 13) + &quot;&amp;&quot;;//AmendDate<BR>
+                Catalog[i - 3] += fountainhead[i].Substring(0, 3) + &quot;&amp;&quot;;<BR>
+            }<BR>
+            return Catalog;<BR>
+        }
+</DD>
+<DT>C/C++</DT>
+<!--property:date_created=1516785498-->
+<!--property:date_modified=1516785620-->
+<DD>
+libcurl<BR>
+wininet<BR>
+<BR>
+查看lftp源码中mget怎么实现的
+</DD>
+</DL>
+
+</DD>
+<DT>RTSP</DT>
+<!--property:date_created=1516328752-->
+<!--property:date_modified=1516328840-->
+<DD>
+主码流<BR>
+rtsp://admin:admin12345@192.168.4.64:554/h264/ch1/main/av_stream 			vlc请求视频流<BR>
+rtsp://admin:12345@192.0.0.64:554/MPEG-4/ch1/main/av_stream  <BR>
+<BR>
+//自麻溜<BR>
+rtsp://admin:12345@192.0.0.64/mpeg4/ch1/sub/av_stream  <BR>
+  <BR>
+rtsp://admin:12345@192.0.0.64/h264/ch1/sub/av_stream  
 </DD>
 <DT>相机连接流程</DT>
 <!--property:date_created=1515574729-->
