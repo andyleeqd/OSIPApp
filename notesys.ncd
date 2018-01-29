@@ -1,5 +1,5 @@
 <!DOCTYPE NoteCase-File>
-<!--LastNote:27-->
+<!--LastNote:31-->
 <HTML>
 <HEAD>
 <meta content="text/html;charset=UTF-8" http-equiv="Content-Type">
@@ -3528,6 +3528,171 @@ vfw和dshow里的CODEC分别是通过fourcc码和guid机制寻找的,可以在�
 			if(pvs-&gt;m_pfnOnRealRGBReady != NULL)<BR>
 				pvs-&gt;m_pfnOnRealRGBReady(pvs-&gt;m_pUserData,pvs-&gt;buffer_rgb,pvs-&gt;context-&gt;width,pvs-&gt;context-&gt;width*3,pvs-&gt;context-&gt;height);<BR>
 		}
+</DD>
+<DT>系统方案</DT>
+<!--property:date_created=1516961851-->
+<!--property:date_modified=1516961851-->
+<!--property:expanded-->
+<DD>
+<DL>
+<DT>环境变量不重启</DT>
+<!--property:date_created=1516961865-->
+<!--property:date_modified=1516961875-->
+<DD>
+在“我的电脑”-&gt;“属性”-&gt;“高级”-&gt;“环境变量”中增加或修改环境变量后，需重启系统才能使之生效。有没有什么方法可让它即时生效呢？下面介绍一种方法：<BR>
+<BR>
+　　以修改环境变量“PATH”为例，修改完成后，进入DOS命令提示符，输入：set PATH=C: ，关闭DOS窗口。再次打开DOS窗口，输入：echo %PATH% ，可以发现“我的电脑”-&gt;“属性”-&gt;“高级”-&gt;“环境变量”中设置的 PATH 值已经生效。<BR>
+<BR>
+　　不用担心DOS窗口中的修改会影响环境变量的值，DOS窗口中的环境变量只是Windows环境变量的一个副本而已。但是对副本的修改却会引发Windows环境变量的刷新，这正是我们想要的!<BR>
+<BR>
+ <BR>
+<BR>
+诡异啊，使用win+R-&gt;cmd 启动的cmd.exe 会发现在电脑属性中设置的环境变量立马生效了，在其他模式下启动的cmd却没有发生效果，怪哉！！查看了一下资料，在电脑属性中设置环境变量以后，以后启动的程序和线程会生效，而对以前驻留内存的程序不起作用，也有人说kill explorer.exe 再启动explorer.exe 可以激发设置其作用。<BR>
+<BR>
+ <BR>
+<BR>
+这里要理解的是，一个程序启动时，环境变量被复制到该程序所在的环境中，在该程序执行过程中不会被除该程序以外的其他程序所改变。也就是说，假设我们启动了一个cmd程序，然后通过控制面板修改了环境变量设置，但是已经启动了的cmd所拥有的环境变量并不会被改变。如果我们在修改环境变量之后启动cmd程序，则该程序将拥有新的环境变量。<BR>
+那么结论就很明显了：修改环境变量之后，如果受影响的是应用程序，那么只要简单地重新启动此应用程序，环境变量的修改就会反映到该程序中，而不必重新启动计算机；但是，如果受影响的是系统服务，就必须重新启动才能将环境变量的修改反映到系统服务中（因为没有办法在不重启计算机的情况下重新启动系统服务管理器）。<BR>
+<BR>
+ <BR>
+<BR>
+方案一：修改注册表，并向系统广播消息<BR>
+<BR>
+修改Windows环境变量后不重新启动使之立即生效的方法<BR>
+<BR>
+ <BR>
+<BR>
+不少程序需要添加各自的环境变量，方便定制性使用。用得最多的是用户指定目录如JAVA_HOME等变量，程序中可以根据获取变量%JAVA_HOME%，来获取对应设置的字符串。<BR>
+<BR>
+<BR>
+ <BR>
+<BR>
+一般做法是安装的时候就指定，或者程序中设定。<BR>
+<BR>
+用批处理临时设置环境变量就不提了，这里讲让环境变量始终生效。<BR>
+<BR>
+一般做法是修改环境变量注册表。<BR>
+<BR>
+整个Windows都有效的环境变量在<BR>
+HKEY_LOCAL_MACHINESYSTEMControlSet001ControlSession ManagerEnvironment<BR>
+中设置<BR>
+<BR>
+对当前用户有效的环境变量在<BR>
+HKEY_CURRENT_USEREnvironment<BR>
+中设置<BR>
+<BR>
+其实只是简单的元数据<BR>
+<BR>
+但往往修改玩后无法即时生效，往往需要重启系统。<BR>
+<BR>
+要解决即时生效的问题，可以再在我的电脑属性中设置环境变量中确定一下即可。<BR>
+<BR>
+依此看来，这个过程肯定是读取了注册表，再调用一个系统函数来更新整个系统的变量。一定可以编程解决的。<BR>
+<BR>
+可惜网海茫茫，收不到。<BR>
+<BR>
+一不做二不休，直接下载打开innosetup的代码，搜索Environment，果真找到了。<BR>
+<BR>
+很简单：<BR>
+<BR>
+SendMessageTimeout(HWND_BROADCAST, WM_SETTINGCHANGE, 0,LPARAM(&quot;Environment&quot;), SMTO_ABORTIFHUNG, 5000, &amp;MsgResult);<BR>
+<BR>
+发一个全局的广播，等待各自相应后，立即生效。<BR>
+<BR>
+  { Note: We originally used SendNotifyMessage to broadcast the message but it<BR>
+    turned out that while it worked fine on NT 4 and 2000 it didn't work on XP<BR>
+    -- the string &quot;Environment&quot; in lParam would be garbled on the receiving<BR>
+    end (why I'm not exactly sure). We now use SendMessageTimeout as directed<BR>
+    in the KB article 104011. It isn't as elegant since it could cause us to<BR>
+    be delayed if another app is hung, but it'll have to do. }<BR>
+<BR>
+ <BR>
+<BR>
+ <BR>
+<BR>
+方案二：在高级属性中设置完毕后，在任意cmd下设置一次path的值，达到全局广播的目的<BR>
+<BR>
+让环境变量生效不需重启Windows<BR>
+<BR>
+很多安装程序在安装完成后并不要求重启Windows，而新的环境变量已经生效了，可见在不重启Windows的情况下让环境变量生效是完全可行的。 <BR>
+<BR>
+可我搜索如何不需重启Windows让环境变量生效的方法，只找到三类方案： <BR>
+<BR>
+下载一个专门的软件 <BR>
+编个小程序 <BR>
+修改注册表 <BR>
+我既然是个懒得重启Windows的人，难道我会不厌其烦按上述三种方法去做吗？没办法，我只有自己摸索。最后找到一个非常简单的在Windows下直接让环境变量生效的办法： <BR>
+<BR>
+先到我的电脑&gt;属性&gt;高级&gt;环境变量，添加新环境变量或修改已有的环境变量，然后运行“DOS命令提示符”或run cmd，假设要修改PATH变量，不管PATH的原值是什么，在DOS窗口直接把PATH修改为任意值，如：输入：set PATH=C:，关闭DOS窗口。再次打开DOS窗口，输入：echo %PATH% ，这时可以发现，我的电脑&gt;属 性&gt;高级&gt;环境变量里PATH已经在Windows全局生效了。 <BR>
+<BR>
+不用担心在DOS窗口的修改会影响我的电脑&gt;属性&gt;高级&gt;环境变量里的修改，DOS窗口的环境变量只是Windows环境变量的一个副本，副本的改动不会影响正本，但会触发正本的刷新，这正是我想要的&#8212;&#8212;让环境变量生效。<BR>
+<BR>
+ <BR>
+<BR>
+ <BR>
+<BR>
+方案三：<BR>
+<BR>
+修改Windows环境变量并使之立即生效<BR>
+<BR>
+想在Windows下通过编程修改环境变量的值，并且希望修改完后立即生效。<BR>
+一、环境变量的修改<BR>
+（1）修改当前进程的某个环境变量：SetEnvironmentVariable。<BR>
+（2）修改系统环境变量：在注册表HKEY_LOCAL_MACHINESystemCurrentControlSetControlSession ManagerEnvironment中修改。<BR>
+（3）修改用户环境变量：在注册表中HKEY_CURRENT_USEREnvironment修改。<BR>
+二、环境变量的生效<BR>
+在网上搜了一下，有两种说法：<BR>
+（1）SendMessage(HWND_BROADCAST,WM_SETTINGCHANGE,0,(LPARAM)TEXT(&quot;Environment&quot;));<BR>
+（2）SendMessageTimeout(HWND_BROADCAST, WM_SETTINGCHANGE, 0,LPARAM(&quot;Environment&quot;), SMTO_ABORTIFHUNG, 5000, &amp;MsgResult);<BR>
+没有尝试，先记在这儿。<BR>
+<BR>
+ <BR>
+<BR>
+==========================================================================================<BR>
+<BR>
+下面是网阅的Windows官方资料，文档中阐述了环境变量更改后如何即时生效的原理。
+</DD>
+</DL>
+
+</DD>
+<DT>Tensorflow</DT>
+<!--property:date_created=1517217182-->
+<!--property:date_modified=1517217182-->
+<!--property:expanded-->
+<DD>
+<DL>
+<DT>编译</DT>
+<!--property:date_created=1517217190-->
+<!--property:date_modified=1517222466-->
+<DD>
+cmake .. -A x64 -DCMAKE_BUILD_TYPE=Release <BR>
+More? -DSWIG_EXECUTABLE=E:/code/tensorflow/swigwin-3.0.12/swig.exe <BR>
+More? -DPYTHON_WXECUTABLE=D:/Program Files/Anaconda3/python.exe <BR>
+More? -DPYTHON_LIBRARYS=D:/Program Files/Anaconda3/libs/python35.lib <BR>
+More? -Dtensorflow_ENABLE_GPU=ON <BR>
+More? -DCUDNN_HOME=&quot;D:/cudnn-9.1-windows10-x64-v7/cuda&quot;<BR>
+<BR>
+MSBuild /p:/Configuration=Release tf_python_build_pip_package.vcxproj<BR>
+<BR>
+http://blog.csdn.net/DawnRanger/article/details/77755412
+</DD>
+</DL>
+
+</DD>
+<DT>caffe</DT>
+<!--property:date_created=1517222419-->
+<!--property:date_modified=1517222419-->
+<!--property:expanded-->
+<DD>
+<DL>
+<DT>编译</DT>
+<!--property:date_created=1517222424-->
+<!--property:date_modified=1517222439-->
+<DD>
+http://blog.csdn.net/shakevincent/article/details/51694686
+</DD>
+</DL>
+
 </DD>
 <DT>FTP</DT>
 <!--property:date_created=1516785432-->
