@@ -1,5 +1,5 @@
 <!DOCTYPE NoteCase-File>
-<!--LastNote:31-->
+<!--LastNote:28-->
 <HTML>
 <HEAD>
 <meta content="text/html;charset=UTF-8" http-equiv="Content-Type">
@@ -3449,6 +3449,7 @@ vfw和dshow里的CODEC分别是通过fourcc码和guid机制寻找的,可以在�
 <DT>解码视频流</DT>
 <!--property:date_created=1516960692-->
 <!--property:date_modified=1516960712-->
+<!--property:expanded-->
 <DD>
 	<BR>
 	初始化<BR>
@@ -3527,7 +3528,854 @@ vfw和dshow里的CODEC分别是通过fourcc码和guid机制寻找的,可以在�
 <BR>
 			if(pvs-&gt;m_pfnOnRealRGBReady != NULL)<BR>
 				pvs-&gt;m_pfnOnRealRGBReady(pvs-&gt;m_pUserData,pvs-&gt;buffer_rgb,pvs-&gt;context-&gt;width,pvs-&gt;context-&gt;width*3,pvs-&gt;context-&gt;height);<BR>
-		}
+		}<DL>
+<DT>解码H264TORGBYUV</DT>
+<!--property:date_created=1517277457-->
+<!--property:date_modified=1517277489-->
+<DD>
+FMpeg对视频文件进行解码的大致流程<BR>
+<BR>
+1. 注册所有容器格式: av_register_all()<BR>
+2. 打开文件: av_open_input_file()<BR>
+3. 从文件中提取流信息: av_find_stream_info()<BR>
+4. 穷举所有的流，查找其中种类为CODEC_TYPE_VIDEO<BR>
+5. 查找对应的解码器: avcodec_find_decoder()<BR>
+6. 打开编解码器: avcodec_open()<BR>
+7. 为解码帧分配内存: avcodec_alloc_frame()<BR>
+8. 不停地从码流中提取出帧数据: av_read_frame()<BR>
+9. 判断帧的类型，对于视频帧调用: avcodec_decode_video()<BR>
+10. 解码完后，释放解码器: avcodec_close()<BR>
+11. 关闭输入文件:av_close_input_file()<BR>
+<BR>
+//添加的库:avcodec.lib avdevice.lib avfilter.lib avformat.lib avutil.lib swscale.lib   SDL.lib <BR>
+extern &quot;C&quot;<BR>
+{<BR>
+	#include &lt;libavcodec/avcodec.h&gt;<BR>
+	#include &lt;libavformat/avformat.h&gt;<BR>
+	#include &lt;libswscale/swscale.h&gt;<BR>
+<BR>
+<BR>
+	#include &lt;libsdl/SDL.h&gt;<BR>
+	#include &lt;libsdl/SDL_thread.h&gt;<BR>
+};<BR>
+<BR>
+<BR>
+void SaveFrame(AVFrame *pFrame, int width, int height, int iFrame) <BR>
+{<BR>
+	FILE *pFile;<BR>
+	char szFilename[32];<BR>
+	int  y;<BR>
+	<BR>
+	// Open file<BR>
+	sprintf(szFilename, &quot;frame%d.ppm&quot;, iFrame);<BR>
+	pFile=fopen(szFilename, &quot;wb&quot;);<BR>
+	if(pFile==NULL)<BR>
+		return;<BR>
+	<BR>
+	// Write header<BR>
+	fprintf(pFile, &quot;P6\n%d %d\n255\n&quot;, width, height);<BR>
+	<BR>
+	// Write pixel data<BR>
+	for(y=0; y&lt;height; y++)<BR>
+		fwrite(pFrame-&gt;data[0]+y*pFrame-&gt;linesize[0], 1, width*3, pFile);<BR>
+	<BR>
+	// Close file<BR>
+	fclose(pFile);<BR>
+}<BR>
+<BR>
+<BR>
+void CTest0Dlg::OnButton1() <BR>
+{<BR>
+	// TODO: Add your control notification handler code here<BR>
+	  AVFormatContext *pFormatCtx;<BR>
+  int             i, videoStream;<BR>
+  AVCodecContext  *pCodecCtx;<BR>
+  AVCodec         *pCodec;<BR>
+  AVFrame         *pFrame; <BR>
+  AVFrame         *pFrameRGB;<BR>
+  AVPacket        packet;<BR>
+  int             frameFinished;<BR>
+  int             numBytes;<BR>
+  uint8_t         *buffer;<BR>
+  static int sws_flags = SWS_BICUBIC;<BR>
+  struct SwsContext *img_convert_ctx;<BR>
+   AVPicture pict;  <BR>
+//  argc = 2;<BR>
+  char argv[100] = &quot;d:\\temp\\VIDEO720576.264&quot;;<BR>
+ // argv[1] = &quot;d:\\temp\\ff.mpg&quot;;<BR>
+ <BR>
+  // /*注册所有可用的格式和编解码器*/<BR>
+  av_register_all();<BR>
+  <BR>
+  // Open video file /*以输入方式打开一个媒体文件,也即源文件,codecs并没有打开,只读取了文件的头信息*/<BR>
+  if(av_open_input_file(&amp;pFormatCtx, argv, NULL, 0, NULL)!=0)<BR>
+    return ; // Couldn't open file<BR>
+  <BR>
+  // Retrieve stream information<BR>
+/*通过读取媒体文件的中的包来获取媒体文件中的流信息,对于没有头信息的文件如(mpeg)是非常有用的,<BR>
+// 该函数通常重算类似mpeg-2帧模式的真实帧率,该函数并未改变逻辑文件的position.<BR>
+*/<BR>
+  if(av_find_stream_info(pFormatCtx)&lt;0)<BR>
+    return ; // Couldn't find stream information<BR>
+  <BR>
+  // Dump information about file onto standard error<BR>
+//该函数的作用就是检查下初始化过程中设置的参数是否符合规范<BR>
+  dump_format(pFormatCtx, 0, argv, 0);<BR>
+  <BR>
+  // Find the first video stream<BR>
+  videoStream=-1;<BR>
+  printf(&quot;%d\n&quot;,pFormatCtx-&gt;nb_streams);<BR>
+  getchar();<BR>
+  for(i=0; i&lt;pFormatCtx-&gt;nb_streams; i++)<BR>
+    if(pFormatCtx-&gt;streams[i]-&gt;codec-&gt;codec_type==CODEC_TYPE_VIDEO&amp;&amp;videoStream &lt; 0)<BR>
+ {<BR>
+      videoStream=i;<BR>
+      break;<BR>
+    }<BR>
+  if(videoStream==-1)<BR>
+    return ; // Didn't find a video stream<BR>
+  <BR>
+  // Get a pointer to the codec context for the video stream<BR>
+  pCodecCtx=pFormatCtx-&gt;streams[videoStream]-&gt;codec;<BR>
+  <BR>
+  // Find the decoder for the video stream<BR>
+  pCodec=avcodec_find_decoder(pCodecCtx-&gt;codec_id);<BR>
+/*通过code ID查找一个已经注册的音视频编码器,查找编码器之前,必须先调用av_register_all注册所有支持的编码器<BR>
+音视频编码器保存在一个链表中,查找过程中,函数从头到尾遍历链表,通过比较编码器的ID来查找<BR>
+*/<BR>
+  if(pCodec==NULL) {<BR>
+    fprintf(stderr, &quot;Unsupported codec!\n&quot;);<BR>
+    return ; // Codec not found<BR>
+  }<BR>
+  // Open codec<BR>
+//使用给定的AVCodec初始化AVCodecContext<BR>
+<BR>
+<BR>
+  if(avcodec_open(pCodecCtx, pCodec)&lt;0)<BR>
+    return ; // Could not open codec<BR>
+<BR>
+<BR>
+  //printf(&quot;name %s\n&quot;,pCodec-&gt;name);<BR>
+  //getchar();<BR>
+<BR>
+<BR>
+  // Allocate video frame<BR>
+  pFrame=avcodec_alloc_frame();<BR>
+  <BR>
+  // Allocate an AVFrame structure<BR>
+  pFrameRGB=avcodec_alloc_frame();<BR>
+  if(pFrameRGB==NULL)<BR>
+    return ;<BR>
+  <BR>
+  // Determine required buffer size and allocate buffer<BR>
+  numBytes=avpicture_get_size(PIX_FMT_RGB32, pCodecCtx-&gt;width,<BR>
+         pCodecCtx-&gt;height);<BR>
+  buffer=(uint8_t *)av_malloc(numBytes*sizeof(uint8_t));<BR>
+  <BR>
+  // Assign appropriate parts of buffer to image planes in pFrameRGB<BR>
+  // Note that pFrameRGB is an AVFrame, but AVFrame is a superset<BR>
+  // of AVPicture<BR>
+  avpicture_fill((AVPicture *)pFrameRGB, buffer, PIX_FMT_RGB32,<BR>
+   pCodecCtx-&gt;width, pCodecCtx-&gt;height);<BR>
+  <BR>
+  // Read frames and save first five frames to disk<BR>
+  i=0;<BR>
+  ////////////////////////////////////////////////////////////////<BR>
+  if (SDL_Init(SDL_INIT_VIDEO) &lt; 0)<BR>
+  {<BR>
+	  fprintf(stderr, &quot;can not initialize SDL:%s\n&quot;, SDL_GetError());<BR>
+	  exit(1);<BR>
+   }<BR>
+  atexit(SDL_Quit);<BR>
+  SDL_Surface *screen;<BR>
+  screen = SDL_SetVideoMode(720, 576, 32, SDL_SWSURFACE|SDL_ANYFORMAT);<BR>
+  if ( screen == NULL ) <BR>
+  {<BR>
+	  exit(2);<BR>
+  }<BR>
+  	SDL_Surface *image;<BR>
+<BR>
+<BR>
+    Uint32 rmask, gmask, bmask, amask;<BR>
+<BR>
+<BR>
+    /* SDL interprets each pixel as a 32-bit number, so our masks must depend<BR>
+       on the endianness (byte order) of the machine */<BR>
+#if 0//SDL_BYTEORDER == SDL_BIG_ENDIAN<BR>
+    rmask = 0xff000000;<BR>
+    gmask = 0x00ff0000;<BR>
+    bmask = 0x0000ff00;<BR>
+    amask = 0x000000ff;<BR>
+#else<BR>
+    rmask = 0x000000ff;<BR>
+    gmask = 0x0000ff00;<BR>
+    bmask = 0x00ff0000;<BR>
+    amask = 0xff000000;<BR>
+#endif<BR>
+<BR>
+<BR>
+	image = SDL_CreateRGBSurface(SDL_SWSURFACE, 720, 576, 0,<BR>
+		rmask, gmask, bmask, NULL);<BR>
+    if(image == NULL) <BR>
+	{<BR>
+        //fprintf(stderr, &quot;CreateRGBSurface failed: %s\n&quot;, SDL_GetError());<BR>
+        exit(1);<BR>
+    }<BR>
+  //////////////////////////////////////////////////////////////////<BR>
+  while(av_read_frame(pFormatCtx, &amp;packet)&gt;=0) <BR>
+  {<BR>
+    // Is this a packet from the video stream?<BR>
+    if(packet.stream_index==videoStream) <BR>
+ {<BR>
+    // Decode video frame<BR>
+    avcodec_decode_video(pCodecCtx, pFrame, &amp;frameFinished, <BR>
+       packet.data, packet.size);<BR>
+      <BR>
+    // Did we get a video frame?<BR>
+    if(frameFinished) <BR>
+    {<BR>
+  // Convert the image from its native format to RGB<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+        img_convert_ctx = sws_getContext( pCodecCtx-&gt;width, <BR>
+               pCodecCtx-&gt;height,<BR>
+               pCodecCtx-&gt;pix_fmt,<BR>
+               pCodecCtx-&gt;width, <BR>
+               pCodecCtx-&gt;height,<BR>
+               PIX_FMT_RGB32,<BR>
+               sws_flags, NULL, NULL, NULL);<BR>
+        		sws_scale(img_convert_ctx,pFrame-&gt;data,pFrame-&gt;linesize,0,pCodecCtx-&gt;height,pFrameRGB-&gt;data,pFrameRGB-&gt;linesize);  <BR>
+        sws_freeContext(img_convert_ctx);<BR>
+     ////////////////////////////////////////////////////////////////<BR>
+		memcpy(screen-&gt;pixels,buffer,720*576*4);<BR>
+		<BR>
+		SDL_UpdateRect(screen, 0, 0, image-&gt;w, image-&gt;h);<BR>
+		<BR>
+		/* Free the allocated BMP surface */<BR>
+    SDL_FreeSurface(image);<BR>
+		/////////////////////////////////////////////////////////////////<BR>
+     // Save the frame to disk<BR>
+     if((++i&lt;=5))<BR>
+       SaveFrame(pFrameRGB, pCodecCtx-&gt;width, pCodecCtx-&gt;height, i);<BR>
+    }<BR>
+}<BR>
+    <BR>
+    // Free the packet that was allocated by av_read_frame<BR>
+    av_free_packet(&amp;packet);<BR>
+  }<BR>
+  <BR>
+  // Free the RGB image<BR>
+  av_free(buffer);<BR>
+  av_free(pFrameRGB);<BR>
+  <BR>
+  // Free the YUV frame<BR>
+  av_free(pFrame);<BR>
+  <BR>
+  // Close the codec<BR>
+  avcodec_close(pCodecCtx);<BR>
+  <BR>
+  // Close the video file<BR>
+  av_close_input_file(pFormatCtx);<BR>
+  MessageBox(&quot;over&quot;);<BR>
+}<BR>
+<BR>
+<BR>
+void CTest0Dlg::OnButton2() <BR>
+{<BR>
+	// TODO: Add your control notification handler code here<BR>
+		  AVFormatContext *pFormatCtx;<BR>
+  int             i, videoStream;<BR>
+  AVCodecContext  *pCodecCtx;<BR>
+  AVCodec         *pCodec;<BR>
+  AVFrame         *pFrame; <BR>
+  AVFrame         *pFrameRGB;<BR>
+  AVPacket        packet;<BR>
+  int             frameFinished;<BR>
+  int             numBytes;<BR>
+  uint8_t         *buffer;<BR>
+  static int sws_flags = SWS_BICUBIC;<BR>
+  struct SwsContext *img_convert_ctx;<BR>
+   AVPicture pict;  <BR>
+//  argc = 2;<BR>
+  char argv[100] = &quot;d:\\temp\\VIDEO720576.264&quot;;<BR>
+ // argv[1] = &quot;d:\\temp\\ff.mpg&quot;;<BR>
+ <BR>
+  // /*注册所有可用的格式和编解码器*/<BR>
+  av_register_all();<BR>
+  <BR>
+  // Open video file /*以输入方式打开一个媒体文件,也即源文件,codecs并没有打开,只读取了文件的头信息*/<BR>
+  if(av_open_input_file(&amp;pFormatCtx, argv, NULL, 0, NULL)!=0)<BR>
+    return ; // Couldn't open file<BR>
+  <BR>
+  // Retrieve stream information<BR>
+/*通过读取媒体文件的中的包来获取媒体文件中的流信息,对于没有头信息的文件如(mpeg)是非常有用的,<BR>
+// 该函数通常重算类似mpeg-2帧模式的真实帧率,该函数并未改变逻辑文件的position.<BR>
+*/<BR>
+  if(av_find_stream_info(pFormatCtx)&lt;0)<BR>
+    return ; // Couldn't find stream information<BR>
+  <BR>
+  // Dump information about file onto standard error<BR>
+//该函数的作用就是检查下初始化过程中设置的参数是否符合规范<BR>
+  dump_format(pFormatCtx, 0, argv, 0);<BR>
+  <BR>
+  // Find the first video stream<BR>
+  videoStream=-1;<BR>
+  printf(&quot;%d\n&quot;,pFormatCtx-&gt;nb_streams);<BR>
+  getchar();<BR>
+  for(i=0; i&lt;pFormatCtx-&gt;nb_streams; i++)<BR>
+    if(pFormatCtx-&gt;streams[i]-&gt;codec-&gt;codec_type==CODEC_TYPE_VIDEO&amp;&amp;videoStream &lt; 0)<BR>
+ {<BR>
+      videoStream=i;<BR>
+      break;<BR>
+    }<BR>
+  if(videoStream==-1)<BR>
+    return ; // Didn't find a video stream<BR>
+  <BR>
+  // Get a pointer to the codec context for the video stream<BR>
+  pCodecCtx=pFormatCtx-&gt;streams[videoStream]-&gt;codec;<BR>
+  <BR>
+  // Find the decoder for the video stream<BR>
+  pCodec=avcodec_find_decoder(pCodecCtx-&gt;codec_id);<BR>
+/*通过code ID查找一个已经注册的音视频编码器,查找编码器之前,必须先调用av_register_all注册所有支持的编码器<BR>
+音视频编码器保存在一个链表中,查找过程中,函数从头到尾遍历链表,通过比较编码器的ID来查找<BR>
+*/<BR>
+  if(pCodec==NULL) {<BR>
+    fprintf(stderr, &quot;Unsupported codec!\n&quot;);<BR>
+    return ; // Codec not found<BR>
+  }<BR>
+  // Open codec<BR>
+//使用给定的AVCodec初始化AVCodecContext<BR>
+<BR>
+<BR>
+  if(avcodec_open(pCodecCtx, pCodec)&lt;0)<BR>
+    return ; // Could not open codec<BR>
+<BR>
+<BR>
+  //printf(&quot;name %s\n&quot;,pCodec-&gt;name);<BR>
+  //getchar();<BR>
+<BR>
+<BR>
+  // Allocate video frame<BR>
+  pFrame=avcodec_alloc_frame();<BR>
+  <BR>
+  // Allocate an AVFrame structure<BR>
+  pFrameRGB=avcodec_alloc_frame();<BR>
+  if(pFrameRGB==NULL)<BR>
+    return ;<BR>
+  <BR>
+  // Determine required buffer size and allocate buffer<BR>
+  numBytes=avpicture_get_size(PIX_FMT_RGB24, pCodecCtx-&gt;width,<BR>
+         pCodecCtx-&gt;height);<BR>
+  buffer=(uint8_t *)av_malloc(numBytes*sizeof(uint8_t));<BR>
+  <BR>
+  // Assign appropriate parts of buffer to image planes in pFrameRGB<BR>
+  // Note that pFrameRGB is an AVFrame, but AVFrame is a superset<BR>
+  // of AVPicture<BR>
+  avpicture_fill((AVPicture *)pFrameRGB, buffer, PIX_FMT_RGB24,<BR>
+   pCodecCtx-&gt;width, pCodecCtx-&gt;height);<BR>
+  <BR>
+  // Read frames and save first five frames to disk<BR>
+  i=0;<BR>
+  ////////////////////////////////////////////////////////////////<BR>
+  if (SDL_Init(SDL_INIT_VIDEO) &lt; 0)<BR>
+  {<BR>
+	  fprintf(stderr, &quot;can not initialize SDL:%s\n&quot;, SDL_GetError());<BR>
+	  exit(1);<BR>
+   }<BR>
+  atexit(SDL_Quit);<BR>
+  SDL_Surface *screen;<BR>
+  screen = SDL_SetVideoMode(720, 576, 24, SDL_SWSURFACE|SDL_ANYFORMAT);<BR>
+  if ( screen == NULL ) <BR>
+  {<BR>
+	  exit(2);<BR>
+  }<BR>
+  	SDL_Surface *image;<BR>
+<BR>
+<BR>
+    Uint32 rmask, gmask, bmask, amask;<BR>
+<BR>
+<BR>
+    /* SDL interprets each pixel as a 32-bit number, so our masks must depend<BR>
+       on the endianness (byte order) of the machine */<BR>
+#if 0//SDL_BYTEORDER == SDL_BIG_ENDIAN<BR>
+    rmask = 0xff000000;<BR>
+    gmask = 0x00ff0000;<BR>
+    bmask = 0x0000ff00;<BR>
+    amask = 0x000000ff;<BR>
+#else<BR>
+    rmask = 0x000000ff;<BR>
+    gmask = 0x0000ff00;<BR>
+    bmask = 0x00ff0000;<BR>
+    amask = 0xff000000;<BR>
+#endif<BR>
+<BR>
+<BR>
+	image = SDL_CreateRGBSurface(SDL_SWSURFACE, 720, 576, 0,<BR>
+		rmask, gmask, bmask, NULL);<BR>
+    if(image == NULL) <BR>
+	{<BR>
+        //fprintf(stderr, &quot;CreateRGBSurface failed: %s\n&quot;, SDL_GetError());<BR>
+        exit(1);<BR>
+    }<BR>
+  //////////////////////////////////////////////////////////////////<BR>
+  while(av_read_frame(pFormatCtx, &amp;packet)&gt;=0) <BR>
+  {<BR>
+    // Is this a packet from the video stream?<BR>
+    if(packet.stream_index==videoStream) <BR>
+ {<BR>
+    // Decode video frame<BR>
+    avcodec_decode_video(pCodecCtx, pFrame, &amp;frameFinished, <BR>
+       packet.data, packet.size);<BR>
+      <BR>
+    // Did we get a video frame?<BR>
+    if(frameFinished) <BR>
+    {<BR>
+  // Convert the image from its native format to RGB<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+        img_convert_ctx = sws_getContext( pCodecCtx-&gt;width, <BR>
+               pCodecCtx-&gt;height,<BR>
+               pCodecCtx-&gt;pix_fmt,<BR>
+               pCodecCtx-&gt;width, <BR>
+               pCodecCtx-&gt;height,<BR>
+               PIX_FMT_BGR24,<BR>
+               sws_flags, NULL, NULL, NULL);<BR>
+        		sws_scale(img_convert_ctx,pFrame-&gt;data,pFrame-&gt;linesize,0,pCodecCtx-&gt;height,pFrameRGB-&gt;data,pFrameRGB-&gt;linesize);  <BR>
+        sws_freeContext(img_convert_ctx);<BR>
+     ////////////////////////////////////////////////////////////////<BR>
+		memcpy(screen-&gt;pixels,buffer,720*576*3);<BR>
+		<BR>
+		SDL_UpdateRect(screen, 0, 0, image-&gt;w, image-&gt;h);<BR>
+		<BR>
+		/* Free the allocated BMP surface */<BR>
+    SDL_FreeSurface(image);<BR>
+		/////////////////////////////////////////////////////////////////<BR>
+     // Save the frame to disk<BR>
+     if((++i&lt;=5))<BR>
+       SaveFrame(pFrameRGB, pCodecCtx-&gt;width, pCodecCtx-&gt;height, i);<BR>
+    }<BR>
+}<BR>
+    <BR>
+    // Free the packet that was allocated by av_read_frame<BR>
+    av_free_packet(&amp;packet);<BR>
+  }<BR>
+  <BR>
+  // Free the RGB image<BR>
+  av_free(buffer);<BR>
+  av_free(pFrameRGB);<BR>
+  <BR>
+  // Free the YUV frame<BR>
+  av_free(pFrame);<BR>
+  <BR>
+  // Close the codec<BR>
+  avcodec_close(pCodecCtx);<BR>
+  <BR>
+  // Close the video file<BR>
+  av_close_input_file(pFormatCtx);<BR>
+  MessageBox(&quot;over&quot;);<BR>
+}<BR>
+<BR>
+<BR>
+void CTest0Dlg::OnButton3() <BR>
+{<BR>
+	// TODO: Add your control notification handler code here<BR>
+		// TODO: Add your control notification handler code here<BR>
+		  AVFormatContext *pFormatCtx;<BR>
+  int             i, videoStream;<BR>
+  AVCodecContext  *pCodecCtx;<BR>
+  AVCodec         *pCodec;<BR>
+  AVFrame         *pFrame; <BR>
+  AVFrame         *pFrameYUV;<BR>
+  AVPacket        packet;<BR>
+  int             frameFinished;<BR>
+  int             numBytes;<BR>
+  uint8_t         *buffer;<BR>
+   SDL_Rect        rect;<BR>
+  static int sws_flags = SWS_BICUBIC;<BR>
+  struct SwsContext *img_convert_ctx;<BR>
+   AVPicture pict;  <BR>
+//  argc = 2;<BR>
+  char argv[100] = &quot;d:\\temp\\VIDEO720576.264&quot;;<BR>
+ // argv[1] = &quot;d:\\temp\\ff.mpg&quot;;<BR>
+ <BR>
+  // /*注册所有可用的格式和编解码器*/<BR>
+  av_register_all();<BR>
+  <BR>
+  // Open video file /*以输入方式打开一个媒体文件,也即源文件,codecs并没有打开,只读取了文件的头信息*/<BR>
+  if(av_open_input_file(&amp;pFormatCtx, argv, NULL, 0, NULL)!=0)<BR>
+    return ; // Couldn't open file<BR>
+  <BR>
+  // Retrieve stream information<BR>
+/*通过读取媒体文件的中的包来获取媒体文件中的流信息,对于没有头信息的文件如(mpeg)是非常有用的,<BR>
+// 该函数通常重算类似mpeg-2帧模式的真实帧率,该函数并未改变逻辑文件的position.<BR>
+*/<BR>
+  if(av_find_stream_info(pFormatCtx)&lt;0)<BR>
+    return ; // Couldn't find stream information<BR>
+  <BR>
+  // Dump information about file onto standard error<BR>
+//该函数的作用就是检查下初始化过程中设置的参数是否符合规范<BR>
+  dump_format(pFormatCtx, 0, argv, 0);<BR>
+  <BR>
+  // Find the first video stream<BR>
+  videoStream=-1;<BR>
+  printf(&quot;%d\n&quot;,pFormatCtx-&gt;nb_streams);<BR>
+  getchar();<BR>
+  for(i=0; i&lt;pFormatCtx-&gt;nb_streams; i++)<BR>
+    if(pFormatCtx-&gt;streams[i]-&gt;codec-&gt;codec_type==CODEC_TYPE_VIDEO&amp;&amp;videoStream &lt; 0)<BR>
+ {<BR>
+      videoStream=i;<BR>
+      break;<BR>
+    }<BR>
+  if(videoStream==-1)<BR>
+    return ; // Didn't find a video stream<BR>
+  <BR>
+  // Get a pointer to the codec context for the video stream<BR>
+  pCodecCtx=pFormatCtx-&gt;streams[videoStream]-&gt;codec;<BR>
+  <BR>
+  // Find the decoder for the video stream<BR>
+  pCodec=avcodec_find_decoder(pCodecCtx-&gt;codec_id);<BR>
+/*通过code ID查找一个已经注册的音视频编码器,查找编码器之前,必须先调用av_register_all注册所有支持的编码器<BR>
+音视频编码器保存在一个链表中,查找过程中,函数从头到尾遍历链表,通过比较编码器的ID来查找<BR>
+*/<BR>
+  if(pCodec==NULL) {<BR>
+    fprintf(stderr, &quot;Unsupported codec!\n&quot;);<BR>
+    return ; // Codec not found<BR>
+  }<BR>
+  // Open codec<BR>
+//使用给定的AVCodec初始化AVCodecContext<BR>
+<BR>
+<BR>
+  if(avcodec_open(pCodecCtx, pCodec)&lt;0)<BR>
+    return ; // Could not open codec<BR>
+<BR>
+<BR>
+  //printf(&quot;name %s\n&quot;,pCodec-&gt;name);<BR>
+  //getchar();<BR>
+<BR>
+<BR>
+  // Allocate video frame<BR>
+  pFrame=avcodec_alloc_frame();<BR>
+  <BR>
+  // Allocate an AVFrame structure<BR>
+  pFrameYUV=avcodec_alloc_frame();<BR>
+  if(pFrameYUV==NULL)<BR>
+    return ;<BR>
+  <BR>
+  // Determine required buffer size and allocate buffer<BR>
+  numBytes=avpicture_get_size(PIX_FMT_YUV420P, pCodecCtx-&gt;width,<BR>
+         pCodecCtx-&gt;height);<BR>
+  buffer=(uint8_t *)av_malloc(numBytes*sizeof(uint8_t));<BR>
+  <BR>
+  // Assign appropriate parts of buffer to image planes in pFrameRGB<BR>
+  // Note that pFrameRGB is an AVFrame, but AVFrame is a superset<BR>
+  // of AVPicture<BR>
+  avpicture_fill((AVPicture *)pFrameYUV, buffer, PIX_FMT_YUV420P,<BR>
+   pCodecCtx-&gt;width, pCodecCtx-&gt;height);<BR>
+  <BR>
+  // Read frames and save first five frames to disk<BR>
+  i=0;<BR>
+  ////////////////////////////////////////////////////////////////<BR>
+  if (SDL_Init(SDL_INIT_VIDEO) &lt; 0)<BR>
+  {<BR>
+	  fprintf(stderr, &quot;can not initialize SDL:%s\n&quot;, SDL_GetError());<BR>
+	  exit(1);<BR>
+   }<BR>
+  atexit(SDL_Quit);<BR>
+  SDL_Surface *screen;<BR>
+  screen = SDL_SetVideoMode(720, 576, 24, SDL_SWSURFACE|SDL_ANYFORMAT);<BR>
+  if ( screen == NULL ) <BR>
+  {<BR>
+	  exit(2);<BR>
+  }<BR>
+  	SDL_Overlay *image;<BR>
+<BR>
+<BR>
+	image = SDL_CreateYUVOverlay(pCodecCtx-&gt;width,<BR>
+		pCodecCtx-&gt;height,<BR>
+		SDL_YV12_OVERLAY,<BR>
+				 screen);<BR>
+<BR>
+<BR>
+    if(image == NULL) <BR>
+	{<BR>
+        //fprintf(stderr, &quot;CreateRGBSurface failed: %s\n&quot;, SDL_GetError());<BR>
+        exit(1);<BR>
+    }<BR>
+  //////////////////////////////////////////////////////////////////<BR>
+  while(av_read_frame(pFormatCtx, &amp;packet)&gt;=0) <BR>
+  {<BR>
+    // Is this a packet from the video stream?<BR>
+    if(packet.stream_index==videoStream) <BR>
+ {<BR>
+    // Decode video frame<BR>
+    avcodec_decode_video(pCodecCtx, pFrame, &amp;frameFinished, <BR>
+       packet.data, packet.size);<BR>
+      <BR>
+    // Did we get a video frame?<BR>
+    if(frameFinished) <BR>
+    {<BR>
+  // Convert the image from its native format to RGB<BR>
+         	SDL_LockYUVOverlay(image);<BR>
+<BR>
+<BR>
+// 			pFrameYUV-&gt;data[0] = image-&gt;pixels[0];//预先改变指针数据区，不用copy<BR>
+// 			pFrameYUV-&gt;data[1] = image-&gt;pixels[2];<BR>
+// 			pFrameYUV-&gt;data[2] = image-&gt;pixels[1];<BR>
+// 			<BR>
+// 			pFrameYUV-&gt;linesize[0] = image-&gt;pitches[0];<BR>
+// 			pFrameYUV-&gt;linesize[1] = image-&gt;pitches[2];<BR>
+// 			pFrameYUV-&gt;linesize[2] = image-&gt;pitches[1];<BR>
+<BR>
+<BR>
+        img_convert_ctx = sws_getContext( pCodecCtx-&gt;width, <BR>
+               pCodecCtx-&gt;height,<BR>
+               pCodecCtx-&gt;pix_fmt,<BR>
+               pCodecCtx-&gt;width, <BR>
+               pCodecCtx-&gt;height,<BR>
+               PIX_FMT_YUV420P,<BR>
+               sws_flags, NULL, NULL, NULL);<BR>
+        		sws_scale(img_convert_ctx,pFrame-&gt;data,pFrame-&gt;linesize,0,pCodecCtx-&gt;height,pFrameYUV-&gt;data,pFrameYUV-&gt;linesize);  <BR>
+        sws_freeContext(img_convert_ctx);<BR>
+<BR>
+<BR>
+       memcpy(image-&gt;pixels[0],	pFrameYUV-&gt;data[0],720*576);//拷贝数据yuv420，也可预先改变指针<BR>
+	   memcpy(image-&gt;pixels[2],	pFrameYUV-&gt;data[1],720*576/4);<BR>
+	   memcpy(image-&gt;pixels[1],	pFrameYUV-&gt;data[2],720*576/4);<BR>
+<BR>
+<BR>
+	 SDL_UnlockYUVOverlay(image);<BR>
+	 <BR>
+	 rect.x = 0;<BR>
+	 rect.y = 0;<BR>
+	 rect.w = pCodecCtx-&gt;width;<BR>
+	 rect.h = pCodecCtx-&gt;height;<BR>
+	SDL_DisplayYUVOverlay(image, &amp;rect);<BR>
+    }<BR>
+}<BR>
+    <BR>
+    // Free the packet that was allocated by av_read_frame<BR>
+    av_free_packet(&amp;packet);<BR>
+  }<BR>
+  <BR>
+  // Free the RGB image<BR>
+  av_free(buffer);<BR>
+  av_free(pFrameYUV);<BR>
+  <BR>
+  // Free the YUV frame<BR>
+  av_free(pFrame);<BR>
+  <BR>
+  // Close the codec<BR>
+  avcodec_close(pCodecCtx);<BR>
+  <BR>
+  // Close the video file<BR>
+  av_close_input_file(pFormatCtx);<BR>
+  MessageBox(&quot;over&quot;);<BR>
+}<BR>
+<BR>
+<BR>
+void CTest0Dlg::OnButton4() <BR>
+{<BR>
+	// TODO: Add your control notification handler code here<BR>
+			// TODO: Add your control notification handler code here<BR>
+		  AVFormatContext *pFormatCtx;<BR>
+  int             i, videoStream;<BR>
+  AVCodecContext  *pCodecCtx;<BR>
+  AVCodec         *pCodec;<BR>
+  AVFrame         *pFrame; <BR>
+  AVFrame         *pFrameYUV;<BR>
+  AVPacket        packet;<BR>
+  int             frameFinished;<BR>
+  int             numBytes;<BR>
+  uint8_t         *buffer;<BR>
+   SDL_Rect        rect;<BR>
+  static int sws_flags = SWS_BICUBIC;<BR>
+  struct SwsContext *img_convert_ctx;<BR>
+   AVPicture pict;  <BR>
+//  argc = 2;<BR>
+  char argv[100] = &quot;d:\\temp\\VIDEO720576.264&quot;;<BR>
+ // argv[1] = &quot;d:\\temp\\ff.mpg&quot;;<BR>
+ <BR>
+  // /*注册所有可用的格式和编解码器*/<BR>
+  av_register_all();<BR>
+  <BR>
+  // Open video file /*以输入方式打开一个媒体文件,也即源文件,codecs并没有打开,只读取了文件的头信息*/<BR>
+  if(av_open_input_file(&amp;pFormatCtx, argv, NULL, 0, NULL)!=0)<BR>
+    return ; // Couldn't open file<BR>
+  <BR>
+  // Retrieve stream information<BR>
+/*通过读取媒体文件的中的包来获取媒体文件中的流信息,对于没有头信息的文件如(mpeg)是非常有用的,<BR>
+// 该函数通常重算类似mpeg-2帧模式的真实帧率,该函数并未改变逻辑文件的position.<BR>
+*/<BR>
+  if(av_find_stream_info(pFormatCtx)&lt;0)<BR>
+    return ; // Couldn't find stream information<BR>
+  <BR>
+  // Dump information about file onto standard error<BR>
+//该函数的作用就是检查下初始化过程中设置的参数是否符合规范<BR>
+  dump_format(pFormatCtx, 0, argv, 0);<BR>
+  <BR>
+  // Find the first video stream<BR>
+  videoStream=-1;<BR>
+  printf(&quot;%d\n&quot;,pFormatCtx-&gt;nb_streams);<BR>
+  getchar();<BR>
+  for(i=0; i&lt;pFormatCtx-&gt;nb_streams; i++)<BR>
+    if(pFormatCtx-&gt;streams[i]-&gt;codec-&gt;codec_type==CODEC_TYPE_VIDEO&amp;&amp;videoStream &lt; 0)<BR>
+ {<BR>
+      videoStream=i;<BR>
+      break;<BR>
+    }<BR>
+  if(videoStream==-1)<BR>
+    return ; // Didn't find a video stream<BR>
+  <BR>
+  // Get a pointer to the codec context for the video stream<BR>
+  pCodecCtx=pFormatCtx-&gt;streams[videoStream]-&gt;codec;<BR>
+  <BR>
+  // Find the decoder for the video stream<BR>
+  pCodec=avcodec_find_decoder(pCodecCtx-&gt;codec_id);<BR>
+/*通过code ID查找一个已经注册的音视频编码器,查找编码器之前,必须先调用av_register_all注册所有支持的编码器<BR>
+音视频编码器保存在一个链表中,查找过程中,函数从头到尾遍历链表,通过比较编码器的ID来查找<BR>
+*/<BR>
+  if(pCodec==NULL) {<BR>
+    fprintf(stderr, &quot;Unsupported codec!\n&quot;);<BR>
+    return ; // Codec not found<BR>
+  }<BR>
+  // Open codec<BR>
+//使用给定的AVCodec初始化AVCodecContext<BR>
+<BR>
+<BR>
+  if(avcodec_open(pCodecCtx, pCodec)&lt;0)<BR>
+    return ; // Could not open codec<BR>
+<BR>
+<BR>
+  //printf(&quot;name %s\n&quot;,pCodec-&gt;name);<BR>
+  //getchar();<BR>
+<BR>
+<BR>
+  // Allocate video frame<BR>
+  pFrame=avcodec_alloc_frame();<BR>
+  <BR>
+  // Allocate an AVFrame structure<BR>
+  pFrameYUV=avcodec_alloc_frame();<BR>
+  if(pFrameYUV==NULL)<BR>
+    return ;<BR>
+  <BR>
+  // Determine required buffer size and allocate buffer<BR>
+  numBytes=avpicture_get_size(PIX_FMT_YUV422, pCodecCtx-&gt;width,<BR>
+         pCodecCtx-&gt;height);<BR>
+  buffer=(uint8_t *)av_malloc(numBytes*sizeof(uint8_t));<BR>
+  <BR>
+  // Assign appropriate parts of buffer to image planes in pFrameRGB<BR>
+  // Note that pFrameRGB is an AVFrame, but AVFrame is a superset<BR>
+  // of AVPicture<BR>
+  avpicture_fill((AVPicture *)pFrameYUV, buffer, PIX_FMT_YUV422,<BR>
+   pCodecCtx-&gt;width, pCodecCtx-&gt;height);<BR>
+  <BR>
+  // Read frames and save first five frames to disk<BR>
+  i=0;<BR>
+  ////////////////////////////////////////////////////////////////<BR>
+  if (SDL_Init(SDL_INIT_VIDEO) &lt; 0)<BR>
+  {<BR>
+	  fprintf(stderr, &quot;can not initialize SDL:%s\n&quot;, SDL_GetError());<BR>
+	  exit(1);<BR>
+   }<BR>
+  atexit(SDL_Quit);<BR>
+  SDL_Surface *screen;<BR>
+  screen = SDL_SetVideoMode(720, 576, 24, SDL_SWSURFACE|SDL_ANYFORMAT);<BR>
+  if ( screen == NULL ) <BR>
+  {<BR>
+	  exit(2);<BR>
+  }<BR>
+  	SDL_Overlay *image;<BR>
+<BR>
+<BR>
+	image = SDL_CreateYUVOverlay(pCodecCtx-&gt;width,<BR>
+		pCodecCtx-&gt;height,<BR>
+		SDL_YUY2_OVERLAY,<BR>
+				 screen);<BR>
+<BR>
+<BR>
+    if(image == NULL) <BR>
+	{<BR>
+        //fprintf(stderr, &quot;CreateRGBSurface failed: %s\n&quot;, SDL_GetError());<BR>
+        exit(1);<BR>
+    }<BR>
+  //////////////////////////////////////////////////////////////////<BR>
+  while(av_read_frame(pFormatCtx, &amp;packet)&gt;=0) <BR>
+  {<BR>
+    // Is this a packet from the video stream?<BR>
+    if(packet.stream_index==videoStream) <BR>
+ {<BR>
+    // Decode video frame<BR>
+    avcodec_decode_video(pCodecCtx, pFrame, &amp;frameFinished, <BR>
+       packet.data, packet.size);<BR>
+      <BR>
+    // Did we get a video frame?<BR>
+    if(frameFinished) <BR>
+    {<BR>
+  // Convert the image from its native format to RGB<BR>
+         	SDL_LockYUVOverlay(image);<BR>
+<BR>
+<BR>
+// 			pFrameYUV-&gt;data[0] = image-&gt;pixels[0];<BR>
+// 			pFrameYUV-&gt;data[1] = image-&gt;pixels[2];<BR>
+// 			pFrameYUV-&gt;data[2] = image-&gt;pixels[1];<BR>
+// 			<BR>
+// 			pFrameYUV-&gt;linesize[0] = image-&gt;pitches[0];<BR>
+// 			pFrameYUV-&gt;linesize[1] = image-&gt;pitches[2];<BR>
+// 			pFrameYUV-&gt;linesize[2] = image-&gt;pitches[1];<BR>
+<BR>
+<BR>
+        img_convert_ctx = sws_getContext( pCodecCtx-&gt;width, <BR>
+               pCodecCtx-&gt;height,<BR>
+               pCodecCtx-&gt;pix_fmt,<BR>
+               pCodecCtx-&gt;width, <BR>
+               pCodecCtx-&gt;height,<BR>
+               PIX_FMT_YUV422,<BR>
+               sws_flags, NULL, NULL, NULL);<BR>
+        		sws_scale(img_convert_ctx,pFrame-&gt;data,pFrame-&gt;linesize,0,pCodecCtx-&gt;height,pFrameYUV-&gt;data,pFrameYUV-&gt;linesize);  <BR>
+        sws_freeContext(img_convert_ctx);<BR>
+<BR>
+<BR>
+       memcpy(image-&gt;pixels[0],	pFrameYUV-&gt;data[0],720*576*2);//拷贝数据yuv422<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+	 SDL_UnlockYUVOverlay(image);<BR>
+	 <BR>
+	 rect.x = 0;<BR>
+	 rect.y = 0;<BR>
+	 rect.w = pCodecCtx-&gt;width;<BR>
+	 rect.h = pCodecCtx-&gt;height;<BR>
+	SDL_DisplayYUVOverlay(image, &amp;rect);<BR>
+    }<BR>
+}<BR>
+    <BR>
+    // Free the packet that was allocated by av_read_frame<BR>
+    av_free_packet(&amp;packet);<BR>
+  }<BR>
+  <BR>
+  // Free the RGB image<BR>
+  av_free(buffer);<BR>
+  av_free(pFrameYUV);<BR>
+  <BR>
+  // Free the YUV frame<BR>
+  av_free(pFrame);<BR>
+  <BR>
+  // Close the codec<BR>
+  avcodec_close(pCodecCtx);<BR>
+  <BR>
+  // Close the video file<BR>
+  av_close_input_file(pFormatCtx);<BR>
+  MessageBox(&quot;over&quot;);<BR>
+}<BR>
+http://download.csdn.net/detail/mao0514/8202691
+</DD>
+</DL>
+
 </DD>
 <DT>系统方案</DT>
 <!--property:date_created=1516961851-->
