@@ -1,5 +1,5 @@
 <!DOCTYPE NoteCase-File>
-<!--LastNote:30-->
+<!--LastNote:42-->
 <HTML>
 <HEAD>
 <meta content="text/html;charset=UTF-8" http-equiv="Content-Type">
@@ -3127,7 +3127,6 @@ HANDLEOpenEvent(<BR>
 <DT>OpenH264</DT>
 <!--property:date_created=1516785001-->
 <!--property:date_modified=1516785076-->
-<!--property:expanded-->
 <DD>
 openH264解码流程<BR>
 <BR>
@@ -3449,7 +3448,6 @@ vfw和dshow里的CODEC分别是通过fourcc码和guid机制寻找的,可以在�
 <DT>解码视频流</DT>
 <!--property:date_created=1516960692-->
 <!--property:date_modified=1516960712-->
-<!--property:expanded-->
 <DD>
 	<BR>
 	初始化<BR>
@@ -4381,7 +4379,6 @@ http://download.csdn.net/detail/mao0514/8202691
 <DT>高性能编程</DT>
 <!--property:date_created=1517388605-->
 <!--property:date_modified=1517388605-->
-<!--property:expanded-->
 <DD>
 <DL>
 <DT>C语言高性能编程知识</DT>
@@ -5339,7 +5336,6 @@ vector:|[0]|[1]|[2]|[3]|[]|[]|[]|[]|[]|[]|[]|<BR>
 <DT>系统方案</DT>
 <!--property:date_created=1516961851-->
 <!--property:date_modified=1516961851-->
-<!--property:expanded-->
 <DD>
 <DL>
 <DT>环境变量不重启</DT>
@@ -5465,7 +5461,6 @@ SendMessageTimeout(HWND_BROADCAST, WM_SETTINGCHANGE, 0,LPARAM(&quot;Environment&
 <DT>Tensorflow</DT>
 <!--property:date_created=1517217182-->
 <!--property:date_modified=1517217182-->
-<!--property:expanded-->
 <DD>
 <DL>
 <DT>编译</DT>
@@ -5489,14 +5484,19 @@ http://blog.csdn.net/DawnRanger/article/details/77755412
 <DT>caffe</DT>
 <!--property:date_created=1517222419-->
 <!--property:date_modified=1517222419-->
-<!--property:expanded-->
 <DD>
 <DL>
 <DT>编译</DT>
 <!--property:date_created=1517222424-->
-<!--property:date_modified=1517222439-->
+<!--property:date_modified=1517461523-->
 <DD>
-http://blog.csdn.net/shakevincent/article/details/51694686
+http://blog.csdn.net/shakevincent/article/details/51694686<BR>
+<BR>
+https://www.lfd.uci.edu/~gohlke/pythonlibs/#scipy<BR>
+<BR>
+https://www.cnblogs.com/leoking01/p/6951750.html<BR>
+<BR>
+http://blog.csdn.net/akashaicrecorder/article/details/71016942
 </DD>
 </DL>
 
@@ -5660,6 +5660,21 @@ libcurl<BR>
 wininet<BR>
 <BR>
 查看lftp源码中mget怎么实现的
+</DD>
+<DT>curl</DT>
+<!--property:date_created=1517625058-->
+<!--property:date_modified=1517625058-->
+<!--property:expanded-->
+<DD>
+<DL>
+<DT>编译</DT>
+<!--property:date_created=1517625065-->
+<!--property:date_modified=1517625074-->
+<DD>
+http://windows.php.net/downloads/php-sdk/deps/vc14/x64/
+</DD>
+</DL>
+
 </DD>
 </DL>
 
