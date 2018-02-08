@@ -1,5 +1,5 @@
 <!DOCTYPE NoteCase-File>
-<!--LastNote:42-->
+<!--LastNote:45-->
 <HTML>
 <HEAD>
 <meta content="text/html;charset=UTF-8" http-equiv="Content-Type">
@@ -4376,6 +4376,131 @@ http://download.csdn.net/detail/mao0514/8202691
 </DL>
 
 </DD>
+<DT>系统方案</DT>
+<!--property:date_created=1516961851-->
+<!--property:date_modified=1516961851-->
+<DD>
+<DL>
+<DT>环境变量不重启</DT>
+<!--property:date_created=1516961865-->
+<!--property:date_modified=1516961875-->
+<DD>
+在“我的电脑”-&gt;“属性”-&gt;“高级”-&gt;“环境变量”中增加或修改环境变量后，需重启系统才能使之生效。有没有什么方法可让它即时生效呢？下面介绍一种方法：<BR>
+<BR>
+　　以修改环境变量“PATH”为例，修改完成后，进入DOS命令提示符，输入：set PATH=C: ，关闭DOS窗口。再次打开DOS窗口，输入：echo %PATH% ，可以发现“我的电脑”-&gt;“属性”-&gt;“高级”-&gt;“环境变量”中设置的 PATH 值已经生效。<BR>
+<BR>
+　　不用担心DOS窗口中的修改会影响环境变量的值，DOS窗口中的环境变量只是Windows环境变量的一个副本而已。但是对副本的修改却会引发Windows环境变量的刷新，这正是我们想要的!<BR>
+<BR>
+ <BR>
+<BR>
+诡异啊，使用win+R-&gt;cmd 启动的cmd.exe 会发现在电脑属性中设置的环境变量立马生效了，在其他模式下启动的cmd却没有发生效果，怪哉！！查看了一下资料，在电脑属性中设置环境变量以后，以后启动的程序和线程会生效，而对以前驻留内存的程序不起作用，也有人说kill explorer.exe 再启动explorer.exe 可以激发设置其作用。<BR>
+<BR>
+ <BR>
+<BR>
+这里要理解的是，一个程序启动时，环境变量被复制到该程序所在的环境中，在该程序执行过程中不会被除该程序以外的其他程序所改变。也就是说，假设我们启动了一个cmd程序，然后通过控制面板修改了环境变量设置，但是已经启动了的cmd所拥有的环境变量并不会被改变。如果我们在修改环境变量之后启动cmd程序，则该程序将拥有新的环境变量。<BR>
+那么结论就很明显了：修改环境变量之后，如果受影响的是应用程序，那么只要简单地重新启动此应用程序，环境变量的修改就会反映到该程序中，而不必重新启动计算机；但是，如果受影响的是系统服务，就必须重新启动才能将环境变量的修改反映到系统服务中（因为没有办法在不重启计算机的情况下重新启动系统服务管理器）。<BR>
+<BR>
+ <BR>
+<BR>
+方案一：修改注册表，并向系统广播消息<BR>
+<BR>
+修改Windows环境变量后不重新启动使之立即生效的方法<BR>
+<BR>
+ <BR>
+<BR>
+不少程序需要添加各自的环境变量，方便定制性使用。用得最多的是用户指定目录如JAVA_HOME等变量，程序中可以根据获取变量%JAVA_HOME%，来获取对应设置的字符串。<BR>
+<BR>
+<BR>
+ <BR>
+<BR>
+一般做法是安装的时候就指定，或者程序中设定。<BR>
+<BR>
+用批处理临时设置环境变量就不提了，这里讲让环境变量始终生效。<BR>
+<BR>
+一般做法是修改环境变量注册表。<BR>
+<BR>
+整个Windows都有效的环境变量在<BR>
+HKEY_LOCAL_MACHINESYSTEMControlSet001ControlSession ManagerEnvironment<BR>
+中设置<BR>
+<BR>
+对当前用户有效的环境变量在<BR>
+HKEY_CURRENT_USEREnvironment<BR>
+中设置<BR>
+<BR>
+其实只是简单的元数据<BR>
+<BR>
+但往往修改玩后无法即时生效，往往需要重启系统。<BR>
+<BR>
+要解决即时生效的问题，可以再在我的电脑属性中设置环境变量中确定一下即可。<BR>
+<BR>
+依此看来，这个过程肯定是读取了注册表，再调用一个系统函数来更新整个系统的变量。一定可以编程解决的。<BR>
+<BR>
+可惜网海茫茫，收不到。<BR>
+<BR>
+一不做二不休，直接下载打开innosetup的代码，搜索Environment，果真找到了。<BR>
+<BR>
+很简单：<BR>
+<BR>
+SendMessageTimeout(HWND_BROADCAST, WM_SETTINGCHANGE, 0,LPARAM(&quot;Environment&quot;), SMTO_ABORTIFHUNG, 5000, &amp;MsgResult);<BR>
+<BR>
+发一个全局的广播，等待各自相应后，立即生效。<BR>
+<BR>
+  { Note: We originally used SendNotifyMessage to broadcast the message but it<BR>
+    turned out that while it worked fine on NT 4 and 2000 it didn't work on XP<BR>
+    -- the string &quot;Environment&quot; in lParam would be garbled on the receiving<BR>
+    end (why I'm not exactly sure). We now use SendMessageTimeout as directed<BR>
+    in the KB article 104011. It isn't as elegant since it could cause us to<BR>
+    be delayed if another app is hung, but it'll have to do. }<BR>
+<BR>
+ <BR>
+<BR>
+ <BR>
+<BR>
+方案二：在高级属性中设置完毕后，在任意cmd下设置一次path的值，达到全局广播的目的<BR>
+<BR>
+让环境变量生效不需重启Windows<BR>
+<BR>
+很多安装程序在安装完成后并不要求重启Windows，而新的环境变量已经生效了，可见在不重启Windows的情况下让环境变量生效是完全可行的。 <BR>
+<BR>
+可我搜索如何不需重启Windows让环境变量生效的方法，只找到三类方案： <BR>
+<BR>
+下载一个专门的软件 <BR>
+编个小程序 <BR>
+修改注册表 <BR>
+我既然是个懒得重启Windows的人，难道我会不厌其烦按上述三种方法去做吗？没办法，我只有自己摸索。最后找到一个非常简单的在Windows下直接让环境变量生效的办法： <BR>
+<BR>
+先到我的电脑&gt;属性&gt;高级&gt;环境变量，添加新环境变量或修改已有的环境变量，然后运行“DOS命令提示符”或run cmd，假设要修改PATH变量，不管PATH的原值是什么，在DOS窗口直接把PATH修改为任意值，如：输入：set PATH=C:，关闭DOS窗口。再次打开DOS窗口，输入：echo %PATH% ，这时可以发现，我的电脑&gt;属 性&gt;高级&gt;环境变量里PATH已经在Windows全局生效了。 <BR>
+<BR>
+不用担心在DOS窗口的修改会影响我的电脑&gt;属性&gt;高级&gt;环境变量里的修改，DOS窗口的环境变量只是Windows环境变量的一个副本，副本的改动不会影响正本，但会触发正本的刷新，这正是我想要的&#8212;&#8212;让环境变量生效。<BR>
+<BR>
+ <BR>
+<BR>
+ <BR>
+<BR>
+方案三：<BR>
+<BR>
+修改Windows环境变量并使之立即生效<BR>
+<BR>
+想在Windows下通过编程修改环境变量的值，并且希望修改完后立即生效。<BR>
+一、环境变量的修改<BR>
+（1）修改当前进程的某个环境变量：SetEnvironmentVariable。<BR>
+（2）修改系统环境变量：在注册表HKEY_LOCAL_MACHINESystemCurrentControlSetControlSession ManagerEnvironment中修改。<BR>
+（3）修改用户环境变量：在注册表中HKEY_CURRENT_USEREnvironment修改。<BR>
+二、环境变量的生效<BR>
+在网上搜了一下，有两种说法：<BR>
+（1）SendMessage(HWND_BROADCAST,WM_SETTINGCHANGE,0,(LPARAM)TEXT(&quot;Environment&quot;));<BR>
+（2）SendMessageTimeout(HWND_BROADCAST, WM_SETTINGCHANGE, 0,LPARAM(&quot;Environment&quot;), SMTO_ABORTIFHUNG, 5000, &amp;MsgResult);<BR>
+没有尝试，先记在这儿。<BR>
+<BR>
+ <BR>
+<BR>
+==========================================================================================<BR>
+<BR>
+下面是网阅的Windows官方资料，文档中阐述了环境变量更改后如何即时生效的原理。
+</DD>
+</DL>
+
+</DD>
 <DT>高性能编程</DT>
 <!--property:date_created=1517388605-->
 <!--property:date_modified=1517388605-->
@@ -5333,131 +5458,6 @@ vector:|[0]|[1]|[2]|[3]|[]|[]|[]|[]|[]|[]|[]|<BR>
 </DL>
 
 </DD>
-<DT>系统方案</DT>
-<!--property:date_created=1516961851-->
-<!--property:date_modified=1516961851-->
-<DD>
-<DL>
-<DT>环境变量不重启</DT>
-<!--property:date_created=1516961865-->
-<!--property:date_modified=1516961875-->
-<DD>
-在“我的电脑”-&gt;“属性”-&gt;“高级”-&gt;“环境变量”中增加或修改环境变量后，需重启系统才能使之生效。有没有什么方法可让它即时生效呢？下面介绍一种方法：<BR>
-<BR>
-　　以修改环境变量“PATH”为例，修改完成后，进入DOS命令提示符，输入：set PATH=C: ，关闭DOS窗口。再次打开DOS窗口，输入：echo %PATH% ，可以发现“我的电脑”-&gt;“属性”-&gt;“高级”-&gt;“环境变量”中设置的 PATH 值已经生效。<BR>
-<BR>
-　　不用担心DOS窗口中的修改会影响环境变量的值，DOS窗口中的环境变量只是Windows环境变量的一个副本而已。但是对副本的修改却会引发Windows环境变量的刷新，这正是我们想要的!<BR>
-<BR>
- <BR>
-<BR>
-诡异啊，使用win+R-&gt;cmd 启动的cmd.exe 会发现在电脑属性中设置的环境变量立马生效了，在其他模式下启动的cmd却没有发生效果，怪哉！！查看了一下资料，在电脑属性中设置环境变量以后，以后启动的程序和线程会生效，而对以前驻留内存的程序不起作用，也有人说kill explorer.exe 再启动explorer.exe 可以激发设置其作用。<BR>
-<BR>
- <BR>
-<BR>
-这里要理解的是，一个程序启动时，环境变量被复制到该程序所在的环境中，在该程序执行过程中不会被除该程序以外的其他程序所改变。也就是说，假设我们启动了一个cmd程序，然后通过控制面板修改了环境变量设置，但是已经启动了的cmd所拥有的环境变量并不会被改变。如果我们在修改环境变量之后启动cmd程序，则该程序将拥有新的环境变量。<BR>
-那么结论就很明显了：修改环境变量之后，如果受影响的是应用程序，那么只要简单地重新启动此应用程序，环境变量的修改就会反映到该程序中，而不必重新启动计算机；但是，如果受影响的是系统服务，就必须重新启动才能将环境变量的修改反映到系统服务中（因为没有办法在不重启计算机的情况下重新启动系统服务管理器）。<BR>
-<BR>
- <BR>
-<BR>
-方案一：修改注册表，并向系统广播消息<BR>
-<BR>
-修改Windows环境变量后不重新启动使之立即生效的方法<BR>
-<BR>
- <BR>
-<BR>
-不少程序需要添加各自的环境变量，方便定制性使用。用得最多的是用户指定目录如JAVA_HOME等变量，程序中可以根据获取变量%JAVA_HOME%，来获取对应设置的字符串。<BR>
-<BR>
-<BR>
- <BR>
-<BR>
-一般做法是安装的时候就指定，或者程序中设定。<BR>
-<BR>
-用批处理临时设置环境变量就不提了，这里讲让环境变量始终生效。<BR>
-<BR>
-一般做法是修改环境变量注册表。<BR>
-<BR>
-整个Windows都有效的环境变量在<BR>
-HKEY_LOCAL_MACHINESYSTEMControlSet001ControlSession ManagerEnvironment<BR>
-中设置<BR>
-<BR>
-对当前用户有效的环境变量在<BR>
-HKEY_CURRENT_USEREnvironment<BR>
-中设置<BR>
-<BR>
-其实只是简单的元数据<BR>
-<BR>
-但往往修改玩后无法即时生效，往往需要重启系统。<BR>
-<BR>
-要解决即时生效的问题，可以再在我的电脑属性中设置环境变量中确定一下即可。<BR>
-<BR>
-依此看来，这个过程肯定是读取了注册表，再调用一个系统函数来更新整个系统的变量。一定可以编程解决的。<BR>
-<BR>
-可惜网海茫茫，收不到。<BR>
-<BR>
-一不做二不休，直接下载打开innosetup的代码，搜索Environment，果真找到了。<BR>
-<BR>
-很简单：<BR>
-<BR>
-SendMessageTimeout(HWND_BROADCAST, WM_SETTINGCHANGE, 0,LPARAM(&quot;Environment&quot;), SMTO_ABORTIFHUNG, 5000, &amp;MsgResult);<BR>
-<BR>
-发一个全局的广播，等待各自相应后，立即生效。<BR>
-<BR>
-  { Note: We originally used SendNotifyMessage to broadcast the message but it<BR>
-    turned out that while it worked fine on NT 4 and 2000 it didn't work on XP<BR>
-    -- the string &quot;Environment&quot; in lParam would be garbled on the receiving<BR>
-    end (why I'm not exactly sure). We now use SendMessageTimeout as directed<BR>
-    in the KB article 104011. It isn't as elegant since it could cause us to<BR>
-    be delayed if another app is hung, but it'll have to do. }<BR>
-<BR>
- <BR>
-<BR>
- <BR>
-<BR>
-方案二：在高级属性中设置完毕后，在任意cmd下设置一次path的值，达到全局广播的目的<BR>
-<BR>
-让环境变量生效不需重启Windows<BR>
-<BR>
-很多安装程序在安装完成后并不要求重启Windows，而新的环境变量已经生效了，可见在不重启Windows的情况下让环境变量生效是完全可行的。 <BR>
-<BR>
-可我搜索如何不需重启Windows让环境变量生效的方法，只找到三类方案： <BR>
-<BR>
-下载一个专门的软件 <BR>
-编个小程序 <BR>
-修改注册表 <BR>
-我既然是个懒得重启Windows的人，难道我会不厌其烦按上述三种方法去做吗？没办法，我只有自己摸索。最后找到一个非常简单的在Windows下直接让环境变量生效的办法： <BR>
-<BR>
-先到我的电脑&gt;属性&gt;高级&gt;环境变量，添加新环境变量或修改已有的环境变量，然后运行“DOS命令提示符”或run cmd，假设要修改PATH变量，不管PATH的原值是什么，在DOS窗口直接把PATH修改为任意值，如：输入：set PATH=C:，关闭DOS窗口。再次打开DOS窗口，输入：echo %PATH% ，这时可以发现，我的电脑&gt;属 性&gt;高级&gt;环境变量里PATH已经在Windows全局生效了。 <BR>
-<BR>
-不用担心在DOS窗口的修改会影响我的电脑&gt;属性&gt;高级&gt;环境变量里的修改，DOS窗口的环境变量只是Windows环境变量的一个副本，副本的改动不会影响正本，但会触发正本的刷新，这正是我想要的&#8212;&#8212;让环境变量生效。<BR>
-<BR>
- <BR>
-<BR>
- <BR>
-<BR>
-方案三：<BR>
-<BR>
-修改Windows环境变量并使之立即生效<BR>
-<BR>
-想在Windows下通过编程修改环境变量的值，并且希望修改完后立即生效。<BR>
-一、环境变量的修改<BR>
-（1）修改当前进程的某个环境变量：SetEnvironmentVariable。<BR>
-（2）修改系统环境变量：在注册表HKEY_LOCAL_MACHINESystemCurrentControlSetControlSession ManagerEnvironment中修改。<BR>
-（3）修改用户环境变量：在注册表中HKEY_CURRENT_USEREnvironment修改。<BR>
-二、环境变量的生效<BR>
-在网上搜了一下，有两种说法：<BR>
-（1）SendMessage(HWND_BROADCAST,WM_SETTINGCHANGE,0,(LPARAM)TEXT(&quot;Environment&quot;));<BR>
-（2）SendMessageTimeout(HWND_BROADCAST, WM_SETTINGCHANGE, 0,LPARAM(&quot;Environment&quot;), SMTO_ABORTIFHUNG, 5000, &amp;MsgResult);<BR>
-没有尝试，先记在这儿。<BR>
-<BR>
- <BR>
-<BR>
-==========================================================================================<BR>
-<BR>
-下面是网阅的Windows官方资料，文档中阐述了环境变量更改后如何即时生效的原理。
-</DD>
-</DL>
-
-</DD>
 <DT>Tensorflow</DT>
 <!--property:date_created=1517217182-->
 <!--property:date_modified=1517217182-->
@@ -5675,6 +5675,177 @@ http://windows.php.net/downloads/php-sdk/deps/vc14/x64/
 </DD>
 </DL>
 
+</DD>
+</DL>
+
+</DD>
+<DT>图形图像处理</DT>
+<!--property:date_created=1518077980-->
+<!--property:date_modified=1518077980-->
+<!--property:expanded-->
+<DD>
+<DL>
+<DT>安卓图形图像处理</DT>
+<!--property:date_created=1518077988-->
+<!--property:date_modified=1518077995-->
+<DD>
+http://www.jb51.net/Special/214.htm
+</DD>
+<DT>java图形图像处理</DT>
+<!--property:date_created=1518078008-->
+<!--property:date_modified=1518078018-->
+<DD>
+http://blog.csdn.net/it_man/article/details/7606218
+</DD>
+</DL>
+
+</DD>
+<DT>linux</DT>
+<!--property:date_created=1517816521-->
+<!--property:date_modified=1517816521-->
+<!--property:expanded-->
+<DD>
+<DL>
+<DT>第三方库连接</DT>
+<!--property:date_created=1517816529-->
+<!--property:date_modified=1517816556-->
+<DD>
+1.Ubuntu目录结构<BR>
+在Ubuntu使用记录（常用命令与目录树）中我总结了一些关于Ubuntu/Linux的目录的一些知识，这里回顾一下。<BR>
+软件主要分为3类，可以用which命令查看，一个软件/命令的位置<BR>
+①/sbin<BR>
+表示系统的一些程序，比如shutdown<BR>
+②/bin<BR>
+表示一些可以用在bash上面的命令，比如ps，ls等<BR>
+③/usr/bin<BR>
+表示其他安装的软件，比如我们需要apt-get install安装的软件，比如firefox，gcc，codeblocks等等<BR>
+<BR>
+2.库文件<BR>
+总结自：http://www.cnblogs.com/skynet/p/3372855.html<BR>
+<BR>
+（1）什么是库<BR>
+简单说，库就是一些头文件与库文件（可能包括静态库与动态库两种）的集合。<BR>
+库文件通过头文件向外导出接口，头文件中有函数的声明，库文件中是对应的实现。<BR>
+<BR>
+（2）位置<BR>
+①安装的第三方软件<BR>
+/usr/bin                             可执行文件<BR>
+/usr/lib                              可执行文件的库文件<BR>
+/usr/include                     可执行文件的头文件<BR>
+②安装的第三方库<BR>
+/usr/local/bin                   安装的库的一些测试程序<BR>
+/usr/local/lib                    安装的库的库文件<BR>
+/usr/local/include            安装的库的头文件<BR>
+<BR>
+（3）静态库<BR>
+①格式<BR>
+.a<BR>
+②加载阶段<BR>
+编译四大阶段的链接阶段<BR>
+③本质<BR>
+一系列目标文件（.o文件）的集合<BR>
+④特点<BR>
+程序在运行时与函数库再无瓜葛，移植方便。<BR>
+浪费空间和资源，所有相关的目标文件与涉及到的函数库被链接合成一个可执行文件。<BR>
+如果库有更新，且要加载新库，需重新编译整个应用程序。<BR>
+⑤使用<BR>
+在Ubuntu/Linux下面，只需在编译的时候指定搜索路径与静态库名<BR>
+-L         表示要连接的库所在目录<BR>
+-l          表示链接时需要的静态库（比如libev的静态库文件libev.a在编译的时候，只需要-lev即可）<BR>
+<BR>
+（4）动态库<BR>
+①格式<BR>
+.so<BR>
+②加载阶段<BR>
+动态库是在程序运行时，才被加载到内存中。<BR>
+多个程序如果使用相同的动态库，在内存中只会存在一份拷贝。<BR>
+③特点<BR>
+可以实现进程间资源共享，因此也叫坐共享库。<BR>
+使得程序升级变地简单，只需要更新动态库文件即可。<BR>
+甚至可以做到链接载入完全由程序员在程序代码中控制（显式调用）。<BR>
+④使用<BR>
+由于涉及到编译以及运行两个阶段的库文件查找，所以有两个需要注意的地方。<BR>
+A。编译阶段<BR>
+一样的-L和-l<BR>
+B。运行阶段<BR>
+由于需要在运行的时候也要找到动态库文件的位置。<BR>
+这个是在/etc/ld.so.cache文件里面记载的，系统默认在这个文件里面记载有/lib以及/usr/lib<BR>
+所以，如果你是安装的第三方库，或者是自己生成了一个动态库，你的库文件是在/usr/local/lib中或者其他地方，系统是默认找不到的。<BR>
+这个时候，编译没有问题，可是一旦运行，系统就会提示找不到某某库文件。<BR>
+解决办法是修改/etc/ld.so.cache，但是注意，由于这不是一个配置文件，所以不能直接修改。<BR>
+要通过/etc/ld.so.conf来修改，假设我安装了第三方库libev，库的目录是/usr/local/lib，那么我就要这样做。<BR>
+$vim /etc/ls.so.conf<BR>
+另起一行，加上/usr/local/lib<BR>
+$ldconfig     ,该命令会根据ld.so.conf文件重建ld.so.cache文件，这个时候就能愉快地使用第三方库啦！<BR>
+⑤补充<BR>
+ldd命令，ldd 某应用程序<BR>
+可以查看该应用程序依赖的动态链接库。<BR>
+
+</DD>
+<DT>运行时库链接</DT>
+<!--property:date_created=1517982817-->
+<!--property:date_modified=1517983901-->
+<DD>
+一般我们在Linux下执行某些外部程序的时候可能会提示找不到共享库的错误, 比如:<BR>
+<BR>
+tmux: error while loading shared libraries: libevent-1.4.so.2: cannot open shared object file: No such file or directory<BR>
+<BR>
+原因一般有两个, 一个是操作系统里确实没有包含该共享库(lib*.so.*文件)或者共享库版本不对, 遇到这种情况那就去网上下载并安装上即可. <BR>
+<BR>
+另外一个原因就是已经安装了该共享库, 但执行需要调用该共享库的程序的时候, 程序按照默认共享库路径找不到该共享库文件. <BR>
+<BR>
+所以安装共享库后要注意共享库路径设置问题, 如下:<BR>
+<BR>
+1) 如果共享库文件安装到了/lib或/usr/lib目录下, 那么需执行一下ldconfig命令<BR>
+<BR>
+ldconfig命令的用途, 主要是在默认搜寻目录(/lib和/usr/lib)以及动态库配置文件/etc/ld.so.conf内所列的目录下, 搜索出可共享的动态链接库(格式如lib*.so*), 进而创建出动态装入程序(ld.so)所需的连接和缓存文件. 缓存文件默认为/etc/ld.so.cache, 此文件保存已排好序的动态链接库名字列表. <BR>
+<BR>
+2) 如果共享库文件安装到了/usr/local/lib(很多开源的共享库都会安装到该目录下)或其它&quot;非/lib或/usr/lib&quot;目录下, 那么在执行ldconfig命令前, 还要把新共享库目录加入到共享库配置文件/etc/ld.so.conf中, 如下:<BR>
+<BR>
+# cat /etc/ld.so.conf<BR>
+include ld.so.conf.d/*.conf<BR>
+# echo &quot;/usr/local/lib&quot; &gt;&gt; /etc/ld.so.conf<BR>
+# ldconfig<BR>
+<BR>
+3) 如果共享库文件安装到了其它&quot;非/lib或/usr/lib&quot; 目录下,  但是又不想在/etc/ld.so.conf中加路径(或者是没有权限加路径). 那可以export一个全局变量LD_LIBRARY_PATH, 然后运行程序的时候就会去这个目录中找共享库. <BR>
+<BR>
+LD_LIBRARY_PATH的意思是告诉loader在哪些目录中可以找到共享库. 可以设置多个搜索目录, 这些目录之间用冒号分隔开. 比如安装了一个mysql到/usr/local/mysql目录下, 其中有一大堆库文件在/usr/local/mysql/lib下面, 则可以在.bashrc或.bash_profile或shell里加入以下语句即可:<BR>
+<BR>
+export LD_LIBRARY_PATH=/usr/local/mysql/lib:$LD_LIBRARY_PATH    <BR>
+<BR>
+一般来讲这只是一种临时的解决方案, 在没有权限或临时需要的时候使用.<BR>
+<BR>
+4）如果程序需要的库文件比系统目前存在的村文件版本低，可以做一个链接<BR>
+比如：<BR>
+error while loading shared libraries: libncurses.so.4: cannot open shared<BR>
+object file: No such file or directory<BR>
+<BR>
+ls /usr/lib/libncu*<BR>
+/usr/lib/libncurses.a   /usr/lib/libncurses.so.5<BR>
+/usr/lib/libncurses.so  /usr/lib/libncurses.so.5.3<BR>
+<BR>
+可见虽然没有libncurses.so.4，但有libncurses.so.5，是可以向下兼容的<BR>
+建一个链接就好了<BR>
+ln -s  /usr/lib/libncurses.so.5.3  /usr/lib/libncurses.so.4<BR>
+<BR>
+出处：http://blog.csdn.net/sahusoft/article/details/7388617<BR>
+      http://www.vrlinux.com/shujukuyingyong/20100407/26958.html<BR>
+<BR>
+<BR>
+<BR>
+用 find 命令查找 libmysqlclient.so.18 在哪个目录：<BR>
+<BR>
+# find / -name &quot;libmysqlclient.so.18&quot;<BR>
+<BR>
+/u01/app/mysql/lib/libmysqlclient.so.18<BR>
+<BR>
+进入用户Home目录，打开.bash_profile文件，给环境变量 LD_LIBRARY_PATH 加上 libmysqlclient.so.18 的所在目录。<BR>
+<BR>
+# cd ~      // 进入用户的Home目录<BR>
+<BR>
+# vi .bash_profile    // 用 v i 打开 .bash_profile 文件<BR>
+<BR>
+如下图指示编辑 .bash_profile 文件并保存：
 </DD>
 </DL>
 
