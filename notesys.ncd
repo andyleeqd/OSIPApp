@@ -1,5 +1,5 @@
 <!DOCTYPE NoteCase-File>
-<!--LastNote:45-->
+<!--LastNote:49-->
 <HTML>
 <HEAD>
 <meta content="text/html;charset=UTF-8" http-equiv="Content-Type">
@@ -5504,7 +5504,6 @@ http://blog.csdn.net/akashaicrecorder/article/details/71016942
 <DT>FTP</DT>
 <!--property:date_created=1516785432-->
 <!--property:date_modified=1516785438-->
-<!--property:expanded-->
 <DD>
 C<DL>
 <DT>C#获取网络文件夹文件</DT>
@@ -5682,7 +5681,6 @@ http://windows.php.net/downloads/php-sdk/deps/vc14/x64/
 <DT>图形图像处理</DT>
 <!--property:date_created=1518077980-->
 <!--property:date_modified=1518077980-->
-<!--property:expanded-->
 <DD>
 <DL>
 <DT>安卓图形图像处理</DT>
@@ -5700,10 +5698,112 @@ http://blog.csdn.net/it_man/article/details/7606218
 </DL>
 
 </DD>
+<DT>树莓派</DT>
+<!--property:date_created=1518165142-->
+<!--property:date_modified=1518165142-->
+<DD>
+<DL>
+<DT>安装远程控制系统</DT>
+<!--property:date_created=1518165150-->
+<!--property:date_modified=1518227277-->
+<DD>
+//vnc<BR>
+http://shumeipai.nxez.com/2013/09/04/login-rpi-with-vnc.html?variant=zh-cn<BR>
+<BR>
+//开源n00bRAT<BR>
+http://www.freebuf.com/sectool/687.html<BR>
+<BR>
+<BR>
+//8款开源软件<BR>
+http://www.linuxprobe.com/screen-recorder-in-linux.html<BR>
+http://www.linuxprobe.com/screen-recorder-in-linux.html
+</DD>
+</DL>
+
+</DD>
+<DT>Opencv</DT>
+<!--property:date_created=1518227783-->
+<!--property:date_modified=1518227783-->
+<!--property:expanded-->
+<DD>
+<DL>
+<DT>Ubuntu编译安装</DT>
+<!--property:date_created=1518227793-->
+<!--property:date_modified=1518235860-->
+<DD>
+16.04<BR>
+http://blog.csdn.net/li_wen01/article/details/71641408<BR>
+<BR>
+14.04<BR>
+http://blog.csdn.net/u013831198/article/details/70215925<BR>
+<BR>
+17.04<BR>
+http://www.linuxidc.com/Linux/2017-10/147316.htm<BR>
+<BR>
+<BR>
+<BR>
+cmake -D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=/usr/local -D OPENCV_EXTRA_MODULES_PATH=../opencv_contrib-3.3.1/modules/ .. <BR>
+<BR>
+//编译运行<BR>
+<BR>
+CC = g++ -std=c++11<BR>
+CFLAGS = -I/usr/local/include<BR>
+LDFLAGS = -L/usr/local//lib<BR>
+LDFLAGS += -lopencv_core -lopencv_calib3d -lopencv_xfeatures2d -lopencv_tracking -lopencv_features2d -lopencv_highgui -lopencv_imgcodecs -lopencv_ximgproc -lopencv_imgproc -lpthread -lm -lstdc++ -lgomp<BR>
+SRC = opencvtest.cpp<BR>
+<BR>
+all:<BR>
+        $(CC) $(CFLAGS) $(SRC) $(LDFLAGS) -o opencvtest<BR>
+clean:<BR>
+        rm -rf *.o opencvtest<BR>
+<BR>
+<BR>
+<BR>
+http://blog.csdn.net/CupidYzw97/article/details/74857467<BR>
+http://blog.csdn.net/xiangxianghehe/article/details/78780269<BR>
+<BR>
+cmake -D CMAKE_BUILD_TYPE=RELEASE \<BR>
+  -D CMAKE_INSTALL_PREFIX=/usr/local \<BR>
+  -D INSTALL_C_EXAMPLES=ON \<BR>
+  -D INSTALL_PYTHON_EXAMPLES=ON \<BR>
+  -D WITH_TBB=ON \<BR>
+  -D WITH_V4L=ON \<BR>
+  -D WITH_QT=ON \<BR>
+  -D WITH_OPENGL=ON \<BR>
+  -D OPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules \<BR>
+  -D BUILD_EXAMPLES=ON ..<BR>
+<BR>
+cmake -D CMAKE_BUILD_TYPE=RELEASE \<BR>
+  -DCMAKE_INSTALL_PREFIX=/usr/local \<BR>
+  -D INSTALL_C_EXAMPLES=OFF \<BR>
+  -D INSTALL_PYTHON_EXAMPLES=OFF \<BR>
+  -D WITH_TBB=ON \<BR>
+  -D WITH_V4L=ON \<BR>
+  -D WITH_QT=ON \<BR>
+  -D WITH_OPENGL=ON \<BR>
+  -D OPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules \<BR>
+  -D BUILD_EXAMPLES=OFF ..<BR>
+<BR>
+cmake \<BR>
+-D CMAKE_BUILD_TYPE=RELEASE \<BR>
+-D CMAKE_INSTALL_PREFIX=/usr/local \<BR>
+-D WITH_CUDA=ON \<BR>
+-D ENABLE_FAST_MATH=1 \<BR>
+-D CUDA_FAST_MATH=1 \<BR>
+-D WITH_CUBLAS=1 \<BR>
+-D INSTALL_C_EXAMPLES=OFF \<BR>
+-D INSTALL_PYTHON_EXAMPLES=ON \<BR>
+-D OPENCV_EXTRA_MODULES_PATH=../opencv_contrib-3.3.0/modules  \<BR>
+-D BUILD_SHARED_LIBS=ON \<BR>
+-D WITH_GTK=ON \    <BR>
+-D BUILD_EXAMPLES=ON ..  
+</DD>
+</DL>
+
+</DD>
 <DT>linux</DT>
 <!--property:date_created=1517816521-->
 <!--property:date_modified=1517816521-->
-<!--property:expanded-->
 <DD>
 <DL>
 <DT>第三方库连接</DT>
