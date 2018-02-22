@@ -1,5 +1,5 @@
 <!DOCTYPE NoteCase-File>
-<!--LastNote:49-->
+<!--LastNote:51-->
 <HTML>
 <HEAD>
 <meta content="text/html;charset=UTF-8" http-equiv="Content-Type">
@@ -1835,6 +1835,71 @@ _icv_downloader()<BR>
 </DL>
 
 </DD>
+<DT>osip</DT>
+<!--property:date_created=1515669641-->
+<!--property:date_modified=1515669654-->
+<DD>
+ares_platform.h,<BR>
+<BR>
+ares_platform.c,<BR>
+<BR>
+ares_create_query.c<DL>
+<DT>USX协议</DT>
+<!--property:date_created=1516355397-->
+<!--property:date_modified=1516355406-->
+<DD>
+关见字:<BR>
+<BR>
+UDP UDX RTP,RUDP<BR>
+<BR>
+UDP可靠传输,UDP文件传输,P2P<BR>
+<BR>
+UDP文件传输<BR>
+<BR>
+ <BR>
+<BR>
+一种基于UDP的可靠传输协议-UDX<BR>
+<BR>
+ <BR>
+<BR>
+UDX作为一个新的协议,从研发到成功经力了相当长一段时间.<BR>
+<BR>
+http://topic.csdn.net/u/20091130/12/0ea2c403-b7bd-4b27-bc17-6e5b5cd4cd55.html<BR>
+<BR>
+http://bbs.gameres.com/showthread.asp?page=end&amp;threadid=154641<BR>
+<BR>
+ <BR>
+<BR>
+目前算法基本已经定型,以其稳定高效,接口封富得到了广大网友开发者好评!<BR>
+<BR>
+ <BR>
+<BR>
+UDX开发说明文档.<BR>
+<BR>
+UDX是完全基于标准c++开发的一套UDP传输库,类似TCP,是一种可靠传输算法.主要是兼顾TCP的可靠性和UDP的实时性.另外一个最重要的优势是算法的可控性.<BR>
+<BR>
+    UDX的目的是为了让开发人员更好更快的去开发开效率的UDP网络应用软件,UDX主要是以oo的概念来设计开发的,接口SDK形式提供,提供方法和事件模式,也提供API WIN32 DLL.activex,提供静态库,动态库版本.<BR>
+    UDX内置文件传输接口,支持UDP中转,P2P接口,流式,包式封装,大简化程序员的工作量,提供20多个实用的例子代码.根据其特点,可以用于文件传输,IM(www.commnetsoft.com),视频聊天,聊天室,视频监控等,当然还可以用在竟技类,rpg等游戏 中,根据实际情况决定<BR>
+  目前有windows版本和linux版本.<BR>
+ <BR>
+<BR>
+ <BR>
+<BR>
+经过本人及各位好友的测试,在传输效率上和QQ直传效率相当,在很多情况都是略胜QQ的文件传输.在效率和重传率方面优于开源的UDT,raknet,jrtp等库.<BR>
+<BR>
+ <BR>
+<BR>
+是UDP开发者的首选.<BR>
+<BR>
+ <BR>
+<BR>
+UDX的作者是野蛮人(QQ 24508609 MSN WPLLG@HOTMAIL.COM)<BR>
+<BR>
+<BR>
+http://blog.csdn.net/wwwllg/article/details/5883545<BR>
+<BR>
+
+</DD>
 <DT>Osip2&amp;Exosip2</DT>
 <!--property:date_created=1515575286-->
 <!--property:date_modified=1515575473-->
@@ -1889,15 +1954,6 @@ SIP使用UDP传输协议来传送INVITE消息时，要使用逐 跳重传机制�
 CANCEL事务：<BR>
 CANCEL事务与INVITE事务都是逐跳事务，但是处理方法不同，路径上的每一个代理收到CANCEL请求时，都会发送一个最终应答来响应（而不是发出临时应答），并且向下一跳发送一个CANCEL请求。
 </DD>
-<DT>osip</DT>
-<!--property:date_created=1515669641-->
-<!--property:date_modified=1515669654-->
-<DD>
-ares_platform.h,<BR>
-<BR>
-ares_platform.c,<BR>
-<BR>
-ares_create_query.c<DL>
 <DT>UAC代理</DT>
 <!--property:date_created=1515731364-->
 <!--property:date_modified=1515731372-->
@@ -2604,62 +2660,6 @@ eXosip_set_option (ctx, EXOSIP_OPT_USE_RPORT, &amp;val);<BR>
 rtp必须关闭
 </DD>
 </DL>
-
-</DD>
-<DT>USX协议</DT>
-<!--property:date_created=1516355397-->
-<!--property:date_modified=1516355406-->
-<DD>
-关见字:<BR>
-<BR>
-UDP UDX RTP,RUDP<BR>
-<BR>
-UDP可靠传输,UDP文件传输,P2P<BR>
-<BR>
-UDP文件传输<BR>
-<BR>
- <BR>
-<BR>
-一种基于UDP的可靠传输协议-UDX<BR>
-<BR>
- <BR>
-<BR>
-UDX作为一个新的协议,从研发到成功经力了相当长一段时间.<BR>
-<BR>
-http://topic.csdn.net/u/20091130/12/0ea2c403-b7bd-4b27-bc17-6e5b5cd4cd55.html<BR>
-<BR>
-http://bbs.gameres.com/showthread.asp?page=end&amp;threadid=154641<BR>
-<BR>
- <BR>
-<BR>
-目前算法基本已经定型,以其稳定高效,接口封富得到了广大网友开发者好评!<BR>
-<BR>
- <BR>
-<BR>
-UDX开发说明文档.<BR>
-<BR>
-UDX是完全基于标准c++开发的一套UDP传输库,类似TCP,是一种可靠传输算法.主要是兼顾TCP的可靠性和UDP的实时性.另外一个最重要的优势是算法的可控性.<BR>
-<BR>
-    UDX的目的是为了让开发人员更好更快的去开发开效率的UDP网络应用软件,UDX主要是以oo的概念来设计开发的,接口SDK形式提供,提供方法和事件模式,也提供API WIN32 DLL.activex,提供静态库,动态库版本.<BR>
-    UDX内置文件传输接口,支持UDP中转,P2P接口,流式,包式封装,大简化程序员的工作量,提供20多个实用的例子代码.根据其特点,可以用于文件传输,IM(www.commnetsoft.com),视频聊天,聊天室,视频监控等,当然还可以用在竟技类,rpg等游戏 中,根据实际情况决定<BR>
-  目前有windows版本和linux版本.<BR>
- <BR>
-<BR>
- <BR>
-<BR>
-经过本人及各位好友的测试,在传输效率上和QQ直传效率相当,在很多情况都是略胜QQ的文件传输.在效率和重传率方面优于开源的UDT,raknet,jrtp等库.<BR>
-<BR>
- <BR>
-<BR>
-是UDP开发者的首选.<BR>
-<BR>
- <BR>
-<BR>
-UDX的作者是野蛮人(QQ 24508609 MSN WPLLG@HOTMAIL.COM)<BR>
-<BR>
-<BR>
-http://blog.csdn.net/wwwllg/article/details/5883545<BR>
-<BR>
 
 </DD>
 <DT>rtp数据传输</DT>
@@ -5705,7 +5705,7 @@ http://blog.csdn.net/it_man/article/details/7606218
 <DL>
 <DT>安装远程控制系统</DT>
 <!--property:date_created=1518165150-->
-<!--property:date_modified=1518227277-->
+<!--property:date_modified=1518241444-->
 <DD>
 //vnc<BR>
 http://shumeipai.nxez.com/2013/09/04/login-rpi-with-vnc.html?variant=zh-cn<BR>
@@ -5716,7 +5716,10 @@ http://www.freebuf.com/sectool/687.html<BR>
 <BR>
 //8款开源软件<BR>
 http://www.linuxprobe.com/screen-recorder-in-linux.html<BR>
-http://www.linuxprobe.com/screen-recorder-in-linux.html
+http://www.linuxprobe.com/screen-recorder-in-linux.html<BR>
+<BR>
+//VNC官网<BR>
+https://www.realvnc.com/en/connect/download/vnc/raspberrypi/
 </DD>
 </DL>
 
@@ -5724,7 +5727,6 @@ http://www.linuxprobe.com/screen-recorder-in-linux.html
 <DT>Opencv</DT>
 <!--property:date_created=1518227783-->
 <!--property:date_modified=1518227783-->
-<!--property:expanded-->
 <DD>
 <DL>
 <DT>Ubuntu编译安装</DT>
@@ -5797,6 +5799,21 @@ cmake \<BR>
 -D BUILD_SHARED_LIBS=ON \<BR>
 -D WITH_GTK=ON \    <BR>
 -D BUILD_EXAMPLES=ON ..  
+</DD>
+</DL>
+
+</DD>
+<DT>ffmpeg</DT>
+<!--property:date_created=1518263094-->
+<!--property:date_modified=1518263094-->
+<!--property:expanded-->
+<DD>
+<DL>
+<DT>YUV2RGB</DT>
+<!--property:date_created=1518263104-->
+<!--property:date_modified=1518263114-->
+<DD>
+https://github.com/andrechen/yuv2rgb.git
 </DD>
 </DL>
 
@@ -5946,6 +5963,13 @@ ln -s  /usr/lib/libncurses.so.5.3  /usr/lib/libncurses.so.4<BR>
 # vi .bash_profile    // 用 v i 打开 .bash_profile 文件<BR>
 <BR>
 如下图指示编辑 .bash_profile 文件并保存：
+</DD>
+<DT>Linux入门教程</DT>
+<!--property:date_created=1518242162-->
+<!--property:date_modified=1518242202-->
+<DD>
+sudo apt-get install pakeage //安装程序<BR>
+sudo apt-get --purge remove &quot;&lt;vnc4server&gt;&quot; //卸载程序
 </DD>
 </DL>
 
