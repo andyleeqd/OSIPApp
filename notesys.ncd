@@ -1,5 +1,5 @@
 <!DOCTYPE NoteCase-File>
-<!--LastNote:51-->
+<!--LastNote:49-->
 <HTML>
 <HEAD>
 <meta content="text/html;charset=UTF-8" http-equiv="Content-Type">
@@ -5727,11 +5727,12 @@ https://www.realvnc.com/en/connect/download/vnc/raspberrypi/
 <DT>Opencv</DT>
 <!--property:date_created=1518227783-->
 <!--property:date_modified=1518227783-->
+<!--property:expanded-->
 <DD>
 <DL>
 <DT>Ubuntu编译安装</DT>
 <!--property:date_created=1518227793-->
-<!--property:date_modified=1518235860-->
+<!--property:date_modified=1519726452-->
 <DD>
 16.04<BR>
 http://blog.csdn.net/li_wen01/article/details/71641408<BR>
@@ -5743,8 +5744,26 @@ http://blog.csdn.net/u013831198/article/details/70215925<BR>
 http://www.linuxidc.com/Linux/2017-10/147316.htm<BR>
 <BR>
 <BR>
-<BR>
+<span style="color:#ff0000">//依赖环境<BR>
+sudo apt-get update<BR>
+sudo apt-get install build-essential<BR>
+sudo apt-get install cmake<BR>
+sudo apt-get install libgtk2.0-dev<BR>
+sudo apt-get install pkg-config<BR>
+sudo apt-get install python-dev python-numpy<BR>
+sudo apt-get install libavcodec-dev libavformat-dev libswscale-dev libjpeg-dev libpng-dev libtiff-dev libjasper-dev<BR>
+本篇文章来源于 Linux公社网站(www.linuxidc.com)  原文链接：https://www.linuxidc.com/Linux/2017-02/141157.htm<BR>
+将opencv_contrib拷贝到opencv目录下</span><span style="color:#d81f1f"><BR>
+然后进入build目录下执行下面命令<BR>
 cmake -D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=/usr/local -D OPENCV_EXTRA_MODULES_PATH=../opencv_contrib-3.3.1/modules/ .. <BR>
+<BR>
+然后执行<BR>
+make -j4<BR>
+make install<BR>
+<BR>
+//编译官方例子<BR>
+cmake CMakeList.txt<BR>
+make</span><BR>
 <BR>
 //编译运行<BR>
 <BR>
@@ -5800,6 +5819,233 @@ cmake \<BR>
 -D WITH_GTK=ON \    <BR>
 -D BUILD_EXAMPLES=ON ..  
 </DD>
+<DT>iplimage</DT>
+<!--property:date_created=1519711134-->
+<!--property:date_modified=1519724774-->
+<DD>
+iplimage-&gt;imageData访问<BR>
+<BR>
+<BR>
+iplImage = cvCreateImageHeader(cvSize(width, height, IPL_DEPTH_8U, 1));<BR>
+cvSetData(iplImage, pBuffer, widht*1);<BR>
+cvReleaseImageheader(&amp;iplimage);<BR>
+<BR>
+iplImage = cvCreateImage(cvSize(width, height), IPL_DEPTH_8U, 1);<BR>
+iplImage-&gt;imageData=pBuffer;<BR>
+iplImage-&gt;imageDataOrigin = pBuffer;<BR>
+cvReleaseImageHeader(&amp;iplImgae);<BR>
+<BR>
+iplImage = cvCreateImage(cvSize(width, height), IPL_DEPTH_8U, 1);<BR>
+memcpy(iplImage-&gt;imageData, pBuffer, iplImage-&gt;imageSize);<BR>
+cvReleaseImage(&amp;iplImage);<BR>
+free(pBuffer);<BR>
+<BR>
+经过多次试验，发现IplImage的使用有3种方式可以选择。<BR>
+（1）iplImage = cvCreateImageHeader(cvSize(width,heigth),IPL_DEPTH_8U,1);<BR>
+cvSetData(iplImage,pGrayBuffer,width*1); //第3个参数是行字节数<BR>
+cvReleaseImageheader(&amp;iplImage);<BR>
+free(pGrayBuffer); //pGrayBuffer是程序里用来放灰度数据的空间，由calloc分配<BR>
+<BR>
+<BR>
+（2）iplImage = cvCreateImage(cvSize(width,heigth),IPL_DEPTH_8U,1);<BR>
+iplImage-&gt;imageData=pGrayBuffer;<BR>
+iplImage-&gt;imageDataOrigin=pGrayBuffer;<BR>
+cvReleaseImageheader(&amp;iplImage);<BR>
+free(pGrayBuffer);<BR>
+<BR>
+<BR>
+(3) iplImage = cvCreateImage(cvSize(width,heigth),IPL_DEPTH_8U,1);<BR>
+memcpy(iplImage-&gt;imageData,pGrayBuffer,iplImage-&gt;imageSize);<BR>
+cvReleaseImage(&amp;iplImage);<BR>
+free(pGrayBuffer);<BR>
+结论:这3种方式都正确，但推荐用第（1）种。总之，记住一点，如果imageData指向的空间是由cvCreateImage初始化的，那么用cvReleaseImage来释放；如果imageData指向的空间是后来用户指定的，那么用vReleaseImageheader(&amp;iplImage);释放，并由用户自行释放分配的空间。<BR>
+其实（1）cvSetData所做的事情和（2）中两句指针赋值类似。<BR>
+如果分配和释放没搭配好，比如自行分配空间搭配上cvReleaseImage(&amp;iplImage);就会出现“OpenCV ERROR: Unknown error code -49 (Deallocation error)”这类错误<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+IplImage结构<BR>
+<BR>
+由于OpenCV主要针对的是计算机视觉方面的处理，因此在函数库中，最重要的结构体是IplImage结构。IplImage结构来源于Intel的另外一个函数库Intel Image Processing Library (IPL)，该函数库主要是针对图像处理。IplImage结构具体定义如下：<BR>
+<BR>
+typedef struct _IplImage<BR>
+<BR>
+    {<BR>
+<BR>
+        int nSize;         /* IplImage大小 */<BR>
+<BR>
+        int ID;            /* 版本 (=0)*/<BR>
+<BR>
+        int nChannels;     /* 大多数OPENCV函数支持1,2,3 或 4 个通道 */<BR>
+<BR>
+        int alphaChannel; /* 被OpenCV忽略 */<BR>
+<BR>
+        int depth;         /* 像素的位深度，主要有以下支持格式： IPL_DEPTH_8U, IPL_DEPTH_8S, IPL_DEPTH_16U,IPL_DEPTH_16S, IPL_DEPTH_32S,<BR>
+<BR>
+IPL_DEPTH_32F 和IPL_DEPTH_64F */<BR>
+<BR>
+        char colorModel[4]; /* 被OpenCV忽略 */<BR>
+<BR>
+        char channelSeq[4]; /* 同上 */<BR>
+<BR>
+        int dataOrder;     /* 0 - 交叉存取颜色通道, 1 - 分开的颜色通道.  只有cvCreateImage可以创建交叉存取图像 */<BR>
+<BR>
+        int origin;        /*图像原点位置： 0表示顶-左结构,1表示底-左结构 */<BR>
+<BR>
+        int align;         /* 图像行排列方式 (4 or 8)，在 OpenCV 被忽略，使用 widthStep 代替 */<BR>
+<BR>
+        int width;        /* 图像宽像素数 */<BR>
+<BR>
+        int height;        /* 图像高像素数*/<BR>
+<BR>
+        struct _IplROI *roi;   /* 图像感兴趣区域，当该值非空时，只对该区域进行处理 */<BR>
+<BR>
+        struct _IplImage *maskROI; /* 在 OpenCV中必须为NULL */<BR>
+<BR>
+        void *imageId;     /* 同上*/<BR>
+<BR>
+        struct _IplTileInfo *tileInfo; /*同上*/<BR>
+<BR>
+        int imageSize;     /* 图像数据大小(在交叉存取格式下ImageSize=image-&gt;height*image-&gt;widthStep），单位字节*/<BR>
+<BR>
+        char *imageData;    /* 指向排列的图像数据 */<BR>
+<BR>
+        int widthStep;     /* 排列的图像行大小，以字节为单位 */<BR>
+<BR>
+        int BorderMode[4]; /* 边际结束模式, 在 OpenCV 被忽略*/<BR>
+<BR>
+        int BorderConst[4]; /* 同上 */<BR>
+<BR>
+        char *imageDataOrigin; /* 指针指向一个不同的图像数据结构（不是必须排列的），是为了纠正图像内存分配准备的 */<BR>
+<BR>
+    } IplImage;<BR>
+<BR>
+IplImage结构体是整个OpenCV函数库的基础，在定义该结构变量时需要用到函数cvCreatImage，变量定义方法如下：<BR>
+<BR>
+IplImage* src=&quot;/cvCreateImage&quot;(cvSize(400,300), IPL_DEPTH_8U,3);<BR>
+<BR>
+上句定义了一个IplImage指针变量src，图像的大小是400&times;300，图像颜色深度8位，3通道图像。<BR>
+<BR>
+重要结构元素说明：<BR>
+<BR>
+depth和nChannels<BR>
+<BR>
+depth代表颜色深度，使用的是以下定义的宏,nChannels是通道数，为1,2,3或4。<BR>
+depth的宏定义：<BR>
+IPL_DEPTH_8U,无符号8bit整数(8u)<BR>
+IPL_DEPTH_8S,有符号8bit整数(8s)<BR>
+IPL_DEPTH_16S,有符号16bit整数(16s)<BR>
+IPL_DEPTH_32S,有符号32bit整数(32s)<BR>
+IPL_DEPTH_32F,32bit浮点数，单精度(32f)<BR>
+<BR>
+IPL_DEPTH_64F,64bit浮点数，双精度(64f)<BR>
+（注：这里的颜色深度是指单个通道的数据保存为的变量类型，例如RGB24格式的数据，通道数为3，颜色深度为IPL_DEPTH_8U）<BR>
+origin和dataOrder<BR>
+<BR>
+<BR>
+origin变量可以有两个取值：IPL_ORIGIN_TL或者IPL_ORIGIN_BL,分别代表图像坐标系原点在左上角或是左下角。相应的，在计算机视觉领域，一个重要的错误来源就是原点位置的定义不统一。例如，图像的来源不同，操作系统不同，视频解码codec不同，存储方式不同等等，都可以造成原点位置的变化。例如，你可能认为你正在从图像上面的脸部附近取样，但实际上你却在图像下方的裙子附近取样。最初时，就应该检查一下你的系统中图像的原点位置，这可以通过在图像上方画个形状等方式实现。<BR>
+dataOrder的取值可以是IPL_DATA_ORDER_PIXEL或者IPL_DATA_ORDER_PLANE,这个成员变量定义了多通道图像数据存储时颜色数据的排列方式，如果是IPL_DATA_ORDER_PIXEL,通道颜色数据排列将会是BGRBGR...的交错排列，如果是IPL_DATA_ORDER_PLANE，则每个通道的颜色值在一起，有几个通道，就有几个“颜色平面”。大多数情况下，通道颜色数据的排列是交错的。<BR>
+widthStep与CvMat中的step类似，是以字节数计算的图像的宽度。成员变量imageData则保存了指向图像数据区首地址的指针。<BR>
+最后还有一个重要参数roi(region of interest感兴趣的区域),这个参数是IplROI结构体类型的变量。IplROI结构体包含了xOffset,yOffset,height,width,coi成员变量，其中xOffset,yOffset是x,y坐标，coi代表channel ofinterest(感兴趣的通道)。有时候，OpenCV图像函数不是作用于整个图像，而是作用于图像的某一个部分。这是，我们就可以使用roi成员变量了。如果IplImage变量中设置了roi，则OpenCV函数就会使用该roi变量。如果coi被设置成非零值，则对该图像的操作就只作用于被coi指定的通道上了。不幸的是，许多OpenCV函数忽略了coi的值。<BR>
+<BR>
+访问图像中的数据<BR>
+<BR>
+就象访问矩阵中元素一样，我们希望用最直接的办法访问图像中的数据，例如，如果我们有一个三通道HSV图像（HSV色彩属性模式是根据色彩的三个基本属性：色相H、饱和度S和明度V来确定颜色的一种方法）,我们要将每个点的饱和度和明度设置成255，则我们可以使用指针来遍历图像，请对比一下，与矩阵的遍历有何不同：<BR>
+void sat_sv( IplImage* img ) {<BR>
+<BR>
+for( int y=0; y&lt;height; y++ ) {<BR>
+    uchar* ptr = (uchar*) (<BR>
+      img-&gt;imageData + y * img-&gt;widthStep <BR>
+    );<BR>
+    for( int x=0; x&lt;width; x++ ) {<BR>
+      ptr[3*x+1] = 255;<BR>
+      ptr[3*x+2] = 255;<BR>
+    }<BR>
+}<BR>
+}<BR>
+注意一下，3*x+1,3*x+2的方法，因为每一个点都有三个通道，所以这样设置。另外imageData成员的类型是uchar*，即字节指针类型，所以与CvMat的data指针类型(union)不同，而不需要象CvMat那样麻烦（还记得step/4,step/8的那种情形吗）。<BR>
+<BR>
+<BR>
+roi和widthStep<BR>
+<BR>
+<BR>
+roi和widthStep在实际工作中有很重要的作用，在很多情况下，使用它们会提高计算机视觉代码的执行速度。这是因为它们允许对图像的某一小部分进行操作，而不是对整个图像进行运算。在OpenCV中，所有的对图像操作的函数都支持roi,如果你想打开roi,可以使用函数cvSetImageROI(),并给函数传递一个矩形子窗口。而cvResetImageROI()是用于关闭roi的。<BR>
+void cvSetImageROI(IplImage* image,CvRect rect);<BR>
+void cvResetImageROI(IplImage* image);<BR>
+注意，在程序中，一旦使用了roi做完相应的运算，就一定要用cvResetImageROI()来关闭roi,否则，其他操作执行时还会使用roi的定义。<BR>
+<BR>
+经过多次试验，发现IplImage的使用有3种方式可以选择。<BR>
+（1）iplImage = cvCreateImageHeader(cvSize(width,heigth),IPL_DEPTH_8U,1);<BR>
+cvSetData(iplImage,pGrayBuffer,width*1);<BR>
+//第3个参数是行字节数<BR>
+cvReleaseImageheader(&amp;iplImage);<BR>
+free(pGrayBuffer);<BR>
+//pGrayBuffer是程序里用来放灰度数据的空间，由calloc分配<BR>
+（2）iplImage = cvCreateImage(cvSize(width,heigth),IPL_DEPTH_8U,1);<BR>
+iplImage-&gt;imageData=pGrayBuffer;<BR>
+iplImage-&gt;imageDataOrigin=pGrayBuffer;<BR>
+cvReleaseImageheader(&amp;iplImage);<BR>
+free(pGrayBuffer);<BR>
+(3)<BR>
+iplImage = cvCreateImage(cvSize(width,heigth),IPL_DEPTH_8U,1);<BR>
+memcpy(iplImage-&gt;imageData,pGrayBuffer,iplImage-&gt;imageSize);<BR>
+cvReleaseImage(&amp;iplImage);<BR>
+free(pGrayBuffer);<BR>
+结论:这3种方式都正确，但推荐用第（1）种。总之，记住一点，如果imageData指向的空间是由cvCreateImage初始化的，那么用cvReleaseImage来释放；如果imageData指向的空间是后来用户指定的，那么用vReleaseImageheader(&amp;iplImage);释放，并由用户自行释放分配的空间。<BR>
+其实（1）cvSetData所做的事情和（2）中两句指针赋值类似。<BR>
+如果分配和释放没搭配好，比如自行分配空间搭配上cvReleaseImage(&amp;iplImage);就会出现“OpenCV ERROR: Unknown error code -49 (Deallocation error)”这类错误。<BR>
+<BR>
+另外，补充一下，“利用cvCreateImage新建一个IplImage，之后一个个的对结构体的成员进行赋值”是非常多余<BR>
+<BR>
+的，cvCreateImage就已经根据参数中的宽度，高度，通道数，颜色深度等信息对结构体的各个成员初始化了，不需要再手动的去赋值。这里要提一下char*imageDataOrigin;这个变量的说明是指针指向一个不同的图像数据结构（不是必须排列的），是为了纠正图像内存分配准备的，实际上初始化后的imageDataOrigin和imageData指向的是同一个地址。既然初始化成这样，我也没去改变它，没有产生什么影响。opencv论坛上sunlighta大侠的解释是：“预留数据接口吧！上面有这么一句话：IplImage结构来自于 Intel Image Processing Library（是其本身所具有的）。OpenCV 只支持其中的一个子集。”<BR>
+注：linux下的内存对齐默认是4字节，可以通过以下语句进行修改：<BR>
+#progma pack(n)<BR>
+<BR>
+<BR>
+常用的五个函数(I/O)<BR>
+1.     图像载入函数<BR>
+函数cvLoadImage载入指定图像文件，并返回指向该文件的IplImage指针。函数支持bmp、jpg、 png、 tiff等格式的图像。其函数原型如下：<BR>
+<BR>
+IplImage* cvLoadImage( const char* filename, int iscolor);<BR>
+<BR>
+其中，filename 是待载入图像的名称，包括图像的扩展名；iscolor是一个辅助参数项，可选正数、零和负数三种值，正数表示作为三通道图像载入，零表示该图像作为单通道图像，负数表示载入图像的通道数由图像文件自身决定。<BR>
+<BR>
+2.     窗口定义函数<BR>
+<BR>
+函数cvNamedWindow定义一个窗口，用于显示图像。其函数原型如下：<BR>
+<BR>
+int cvNamedWindow( const char* name, unsigned long flags );<BR>
+<BR>
+其中，name是窗口名，flags是窗口属性指标值，可以选择CV_WINDOW_AUTOSIZE和0两种值。CV_WINDOW_AUTOSIZE表示窗口尺寸与图像原始尺寸相同，0表示以固定的窗口尺寸显示图像。<BR>
+<BR>
+3.     图像显示函数<BR>
+<BR>
+函数cvShowImage是在指定的窗口中显示图像，其函数原型如下：<BR>
+<BR>
+void cvShowImage( const char* name, const CvArr* image );<BR>
+<BR>
+其中，name是窗口名称，image是图像类型指针，一般是IplImage指针。<BR>
+<BR>
+4.     图像保存函数<BR>
+<BR>
+函数cvSaveImage以指定的文件名保存IplImage类型的指针变量，其函数原型如下：<BR>
+<BR>
+int cvSaveImage( const char* filename, const CvArr* image );<BR>
+<BR>
+其中，filename是图像保存路径和名称，image是IplImage指针变量。<BR>
+<BR>
+5.     图像销毁函数<BR>
+<BR>
+函数cvReleaseImage销毁已定义的IplImage指针变量，释放占用内存空间。其函数原型如下：<BR>
+<BR>
+void cvReleaseImage( IplImage** image );<BR>
+<BR>
+其中，image为已定义的IplImage指针。<BR>
+<BR>
+
+</DD>
 </DL>
 
 </DD>
@@ -5821,6 +6067,7 @@ https://github.com/andrechen/yuv2rgb.git
 <DT>linux</DT>
 <!--property:date_created=1517816521-->
 <!--property:date_modified=1517816521-->
+<!--property:expanded-->
 <DD>
 <DL>
 <DT>第三方库连接</DT>
@@ -5966,13 +6213,658 @@ ln -s  /usr/lib/libncurses.so.5.3  /usr/lib/libncurses.so.4<BR>
 </DD>
 <DT>Linux入门教程</DT>
 <!--property:date_created=1518242162-->
-<!--property:date_modified=1518242202-->
+<!--property:date_modified=1519721584-->
 <DD>
 sudo apt-get install pakeage //安装程序<BR>
-sudo apt-get --purge remove &quot;&lt;vnc4server&gt;&quot; //卸载程序
+sudo apt-get --purge remove &quot;&lt;vnc4server&gt;&quot; //卸载程序<BR>
+<BR>
+kill <BR>
+HUP     1    终端断线<BR>
+INT     2    中断（同 Ctrl + C）<BR>
+QUIT    3    退出（同 Ctrl + \）<BR>
+TERM   15    终止<BR>
+KILL    9    强制终止<BR>
+CONT   18    继续（与STOP相反， fg/bg命令）<BR>
+STOP   19    暂停（同 Ctrl + Z）<BR>
+<BR>
+常规篇：<BR>
+　首先，用ps查看进程，方法如下：<BR>
+<BR>
+$ ps -ef<BR>
+<BR>
+复制代码<BR>
+……<BR>
+smx 1822 1 0 11:38 ? 00:00:49 gnome-terminal<BR>
+smx 1823 1822 0 11:38 ? 00:00:00 gnome-pty-helper<BR>
+smx 1824 1822 0 11:38 pts/0 00:00:02 bash<BR>
+smx 1827 1 4 11:38 ? 00:26:28 /usr/lib/firefox-3.6.18/firefox-bin<BR>
+smx 1857 1822 0 11:38 pts/1 00:00:00 bash<BR>
+smx 1880 1619 0 11:38 ? 00:00:00 update-notifier<BR>
+……<BR>
+smx 11946 1824 0 21:41 pts/0 00:00:00 ps -ef<BR>
+复制代码<BR>
+或者：<BR>
+<BR>
+$ ps -aux<BR>
+<BR>
+复制代码<BR>
+……<BR>
+<BR>
+smx 1822 0.1 0.8 58484 18152 ? Sl 11:38 0:49 gnome-terminal<BR>
+smx 1823 0.0 0.0 1988 712 ? S 11:38 0:00 gnome-pty-helper<BR>
+smx 1824 0.0 0.1 6820 3776 pts/0 Ss 11:38 0:02 bash<BR>
+smx 1827 4.3 5.8 398196 119568 ? Sl 11:38 26:13 /usr/lib/firefox-3.6.18/firefox-bin<BR>
+smx 1857 0.0 0.1 6688 3644 pts/1 Ss 11:38 0:00 bash<BR>
+smx 1880 0.0 0.6 41536 12620 ? S 11:38 0:00 update-notifier<BR>
+……<BR>
+smx 11953 0.0 0.0 2716 1064 pts/0 R+ 21:42 0:00 ps -aux<BR>
+复制代码<BR>
+此时如果我想杀了火狐的进程就在终端输入：<BR>
+<BR>
+$ kill -s 9 1827<BR>
+<BR>
+ <BR>
+<BR>
+其中-s 9 制定了传递给进程的信号是９，即强制、尽快终止进程。各个终止信号及其作用见附录。<BR>
+<BR>
+1827则是上面ps查到的火狐的PID。<BR>
+<BR>
+简单吧，但有个问题，进程少了则无所谓，进程多了，就会觉得痛苦了，无论是ps -ef 还是ps -aux，每次都要在一大串进程信息里面查找到要杀的进程，看的眼都花了。<BR>
+<BR>
+进阶篇：<BR>
+<BR>
+改进１：<BR>
+<BR>
+把ps的查询结果通过管道给grep查找包含特定字符串的进程。管道符“|”用来隔开两个命令，管道符左边命令的输出会作为管道符右边命令的输入。<BR>
+<BR>
+$ ps -ef | grep firefox<BR>
+<BR>
+smx 1827 1 4 11:38 ? 00:27:33 /usr/lib/firefox-3.6.18/firefox-bin<BR>
+smx 12029 1824 0 21:54 pts/0 00:00:00 grep --color=auto firefox<BR>
+这次就清爽了。然后就是<BR>
+<BR>
+$kill -s 9 1827<BR>
+<BR>
+<BR>
+<BR>
+输入&quot;uname -a &quot;,可显示电脑以及操作系统的相关信息。 <BR>
+<BR>
+输入&quot;cat /proc/version&quot;,说明正在运行的内核版本。<BR>
+<BR>
+输入&quot;cat /etc/issue&quot;, 显示的是发行版本信息<BR>
+<BR>
+lsb_release -a (适用于所有的linux，包括Redhat、SuSE、Debian等发行版，但是在debian下要安装lsb)<BR>
+<BR>
+ <BR>
+<BR>
+改进２&#8212;&#8212;使用pgrep：<BR>
+<BR>
+一看到pgrep首先会想到什么？没错，grep！pgrep的p表明了这个命令是专门用于进程查询的grep。<BR>
+<BR>
+$ pgrep firefox<BR>
+1827<BR>
+<BR>
+看到了什么？没错火狐的PID，接下来又要打字了：<BR>
+<BR>
+$kill -s 9 1827<BR>
+<BR>
+ <BR>
+<BR>
+改进３&#8212;&#8212;使用pidof：<BR>
+<BR>
+看到pidof想到啥？没错pid of xx，字面翻译过来就是 xx的PID。<BR>
+<BR>
+$ pidof firefox-bin<BR>
+1827<BR>
+和pgrep相比稍显不足的是，pidof必须给出进程的全名。然后就是老生常谈：<BR>
+<BR>
+$kill -s 9 1827<BR>
+<BR>
+无论使用ps 然后慢慢查找进程PID 还是用grep查找包含相应字符串的进程，亦或者用pgrep直接查找包含相应字符串的进程ＰＩＤ，然后手动输入给ｋｉｌｌ杀掉<BR>
+<BR>
+ <BR>
+<BR>
+改进４：<BR>
+<BR>
+$ps -ef | grep firefox | grep -v grep | cut -c 9-15 | xargs kill -s 9<BR>
+<BR>
+说明：<BR>
+<BR>
+“grep firefox”的输出结果是，所有含有关键字“firefox”的进程。<BR>
+<BR>
+“grep -v grep”是在列出的进程中去除含有关键字“grep”的进程。<BR>
+<BR>
+“cut -c 9-15”是截取输入行的第9个字符到第15个字符，而这正好是进程号PID。<BR>
+<BR>
+“xargs kill -s 9”中的xargs命令是用来把前面命令的输出结果（PID）作为“kill -s 9”命令的参数，并执行该命令。“kill -s 9”会强行杀掉指定进程。<BR>
+<BR>
+ <BR>
+<BR>
+改进５：<BR>
+<BR>
+知道pgrep和pidof两个命令，干嘛还要打那么长一串！<BR>
+$ pgrep firefox | xargs kill -s 9<BR>
+<BR>
+改进６：<BR>
+$ ps -ef | grep firefox | awk '{print $2}' | xargs kill -9<BR>
+kill: No such process<BR>
+有一个比较郁闷的地方，进程已经正确找到并且终止了，但是执行完却提示找不到进程。<BR>
+<BR>
+其中awk '{print $2}' 的作用就是打印（print）出第二列的内容。根据常规篇，可以知道ps输出的第二列正好是PID。就把进程相应的PID通过xargs传递给kill作参数，杀掉对应的进程。<BR>
+<BR>
+改进７：<BR>
+难道每次都要调用xargs把PID传递给kill？答案是否定的：<BR>
+<BR>
+$kill -s 9 `ps -aux | grep firefox | awk '{print $2}'`<BR>
+<BR>
+ <BR>
+<BR>
+改进８：<BR>
+<BR>
+没错，命令依然有点长，换成pgrep。<BR>
+$kill -s 9 `pgrep firefox`<BR>
+<BR>
+ <BR>
+<BR>
+改进9&#8212;&#8212;pkill：<BR>
+<BR>
+看到pkill想到了什么？没错pgrep和kill！pkill＝pgrep+kill。<BR>
+<BR>
+$pkill -９ firefox<BR>
+<BR>
+说明：&quot;-9&quot; 即发送的信号是9，pkill与kill在这点的差别是：pkill无须 “ｓ”，终止信号等级直接跟在 “-“ 后面。之前我一直以为是 &quot;-s 9&quot;，结果每次运行都无法终止进程。<BR>
+<BR>
+ <BR>
+<BR>
+改进10&#8212;&#8212;killall：<BR>
+<BR>
+killall和pkill是相似的,不过如果给出的进程名不完整，killall会报错。pkill或者pgrep只要给出进程名的一部分就可以终止进程。<BR>
+<BR>
+$killall -9 firefox<BR>
+<BR>
+ <BR>
+<BR>
+附录：各种信号及其用途<BR>
+<BR>
+Signal	Description	Signal number on Linux x86[1]<BR>
+SIGABRT	Process aborted	6<BR>
+SIGALRM	Signal raised by alarm	14<BR>
+SIGBUS	Bus error: &quot;access to undefined portion of memory object&quot;	7<BR>
+SIGCHLD	Child process terminated, stopped (or continued*)	17<BR>
+SIGCONT	Continue if stopped	18<BR>
+SIGFPE	Floating point exception: &quot;erroneous arithmetic operation&quot;	8<BR>
+SIGHUP	Hangup	1<BR>
+SIGILL	Illegal instruction	4<BR>
+SIGINT	Interrupt	2<BR>
+SIGKILL	Kill (terminate immediately)	9<BR>
+SIGPIPE	Write to pipe with no one reading	13<BR>
+SIGQUIT	Quit and dump core	3<BR>
+SIGSEGV	Segmentation violation	11<BR>
+SIGSTOP	Stop executing temporarily	19<BR>
+SIGTERM	Termination (request to terminate)	15<BR>
+SIGTSTP	Terminal stop signal	20<BR>
+SIGTTIN	Background process attempting to read from tty (&quot;in&quot;)	21<BR>
+SIGTTOU	Background process attempting to write to tty (&quot;out&quot;)	22<BR>
+SIGUSR1	User-defined 1	10<BR>
+SIGUSR2	User-defined 2	12<BR>
+SIGPOLL	Pollable event	29<BR>
+SIGPROF	Profiling timer expired	27<BR>
+SIGSYS	Bad syscall	31<BR>
+SIGTRAP	Trace/breakpoint trap	5<BR>
+SIGURG	Urgent data available on socket	23<BR>
+SIGVTALRM	Signal raised by timer counting virtual time: &quot;virtual timer expired&quot;	26<BR>
+SIGXCPU	CPU time limit exceeded	24<BR>
+SIGXFSZ	File size limit exceeded	25
+</DD>
+<DT>core</DT>
+<!--property:date_created=1519722044-->
+<!--property:date_modified=1519722071-->
+<DD>
+关于内核转储的设置方法<BR>
+<BR>
+<BR>
+gdb proname core<BR>
+ <BR>
+<BR>
+1. 内核转储作用<BR>
+<BR>
+ <BR>
+<BR>
+(1) 内核转储的最大好处是能够保存问题发生时的状态。<BR>
+<BR>
+(2) 只要有可执行文件和内核转储，就可以知道进程当时的状态。<BR>
+<BR>
+(3) 只要获取内核转储，那么即使没有复现环境，也能调试。<BR>
+<BR>
+ <BR>
+<BR>
+2. 启用内核转储<BR>
+<BR>
+1.1 查看内核转储是否有效<BR>
+<BR>
+在终端中输入以下命令，查看内核转储是否有效。<BR>
+<BR>
+#ulimit -c<BR>
+<BR>
+0<BR>
+<BR>
+-c 表示内核转储文件的大小限制，现在显示为零，表示不能用。<BR>
+<BR>
+可以改为1G<BR>
+<BR>
+#ulimit -c 1073741824<BR>
+<BR>
+也可以改为无限制<BR>
+<BR>
+#ulimit -c unlimited<BR>
+<BR>
+ <BR>
+<BR>
+2.2 测试一个例子<BR>
+<BR>
+例子的源代码：<BR>
+<BR>
+#include &lt;stdio.h&gt;<BR>
+<BR>
+int main(void)<BR>
+<BR>
+{<BR>
+<BR>
+int *a = NULL;<BR>
+<BR>
+*a = 0x1;<BR>
+<BR>
+return 0;<BR>
+<BR>
+}<BR>
+<BR>
+ <BR>
+<BR>
+把以上源代码，写成一个a.c文件后，编译a.c文件产生一个a.out的可执行文件：<BR>
+<BR>
+#gcc -g a.c -o a.out<BR>
+<BR>
+修改a.out文件的权限后，执行它：<BR>
+<BR>
+#./a.out<BR>
+<BR>
+就会显示：<BR>
+<BR>
+Segmentation fault(core dump)<BR>
+<BR>
+这表示在当前目录下, 已经生成了a.out对应的内核转储文件。<BR>
+<BR>
+注意：后面带有(core dump), 才说明转储文件成功生成了。<BR>
+<BR>
+#file core*<BR>
+<BR>
+core:ELF 64-bit LSB core file x86-64, version 1(SYSV), SVR4-style, from './a.out'<BR>
+<BR>
+coreDump: UTF-8 Unicode C program text<BR>
+<BR>
+ <BR>
+<BR>
+要用GDB调试内核转储文件，应该使用以下方式启动GDB:<BR>
+<BR>
+#gdb -c ./*.core ./a.out<BR>
+<BR>
+GNU gdb (GDB) 7.1-Ubuntu<BR>
+<BR>
+...<BR>
+<BR>
+Core was generated by './a.out'.<BR>
+<BR>
+Program terminated with signal 11, Segmentation fault.<BR>
+<BR>
+#0 0x00000000004004dc in main() at a.c:6<BR>
+<BR>
+6 *a =0x1;<BR>
+<BR>
+a.c的第6行收到了11号信号。用GDB的list命令可以查看附近的源代码。<BR>
+<BR>
+(gdb) l 5<BR>
+<BR>
+1            #include &lt;stdio.h&gt;<BR>
+<BR>
+2           <BR>
+<BR>
+3            int main(void)<BR>
+<BR>
+4            {<BR>
+<BR>
+5                   int *a = NULL;<BR>
+<BR>
+6                   *a = 0x1;<BR>
+<BR>
+7                   return 0;<BR>
+<BR>
+8            }<BR>
+<BR>
+这里默认都是当前目录，也可以给core 和a.out 指定路径<BR>
+<BR>
+到这里测试完成！<BR>
+<BR>
+ <BR>
+<BR>
+2.3 永久生效的办法<BR>
+<BR>
+上面所述的方法，只是在当前shell中生效,重启之后，就不再有效了。永久生效的办法是：<BR>
+<BR>
+#vi /etc/profile 然后，在profile中添加：<BR>
+<BR>
+ulimit -c 1073741824<BR>
+<BR>
+ (但是，若将产生的转储文件大小大于该数字时，将不会产生转储文件)<BR>
+<BR>
+或者<BR>
+<BR>
+ulimit -c unlimited<BR>
+<BR>
+ <BR>
+<BR>
+这样重启机器后生效了。 或者， 使用source命令使之马上生效。<BR>
+<BR>
+#source /etc/profile<BR>
+<BR>
+ <BR>
+<BR>
+3. 指定内核转储的文件名和目录<BR>
+<BR>
+缺省情况下，内核在coredump时所产生的core文件放在与该程序相同的目录中，并且文件名固定为core。很显然，如果有多个程序产生core文件，或者同一个程序多次崩溃，就会重复覆盖同一个core文件。<BR>
+<BR>
+我们可以通过修改kernel的参数，指定内核转储所生成的core文件的路径和文件名。<BR>
+<BR>
+可以通过在/etc/sysctl.conf文件中，对sysctl变量kernel.core_pattern的设置。<BR>
+<BR>
+#vi /etc/sysctl.conf 然后，在sysctl.conf文件中添加下面两句话：<BR>
+<BR>
+kernel.core_pattern = /var/core/core_%e_%p<BR>
+<BR>
+kernel.core_uses_pid = 0<BR>
+<BR>
+保存后退出。<BR>
+<BR>
+需要说明的是， /proc/sys/kernel/core_uses_pid。如果这个文件的内容被配置成1，即使core_pattern中没有设置%p，最后生成的core dump文件名仍会加上进程ID。<BR>
+<BR>
+这里%e, %p分别表示：<BR>
+<BR>
+%c 转储文件的大小上限<BR>
+<BR>
+%e 所dump的文件名<BR>
+<BR>
+%g 所dump的进程的实际组ID<BR>
+<BR>
+%h 主机名<BR>
+<BR>
+%p 所dump的进程PID<BR>
+<BR>
+%s 导致本次coredump的信号<BR>
+<BR>
+%t 转储时刻(由1970年1月1日起计的秒数)<BR>
+<BR>
+%u 所dump进程的实际用户ID<BR>
+<BR>
+可以使用以下命令，使修改结果马上生效。<BR>
+<BR>
+#sysctl &#8211;p /etc/sysctl.conf<BR>
+<BR>
+ <BR>
+<BR>
+请在/var目录下先建立core文件夹，然后执行a.out程序，就会在/var/core/下产生以指定格式命名的内核转储文件。查看转储文件的情况：<BR>
+<BR>
+#ls /var/core<BR>
+<BR>
+core_a.out_2834<BR>
+<BR>
+ <BR>
+<BR>
+4. 手动强制某个进程产生core dump的方法（尝试）<BR>
+<BR>
+当某些程序发生crash时，对应进程会产生coredump文件。通过这个coredump文件，开发人员可以找到bug的原因。但是coredump的产生，大都是因为程序crash了。<BR>
+<BR>
+而有些bug是不会导致程序crash的，比如死锁，这时程序已经不正常了，可是却没有coredump产生。如果环境又不允许gdb调试，难道我们就束手无策了吗？<BR>
+<BR>
+针对以上这种情况，一般情况下，对于这样的进程可以利用 watchdog监控它们，当发现这些进程很长时间没有更新其heartbeat时，可以给这些进程发送可以导致其产生coredump的信号。根据 linux的信号默认的处理行为，SIGQUIT，SIGABRT, SIGFPE和SIGSEGV都可以让该进程产生coredump文件。这样我们可以通过coredump来得知死锁是否发生。 当然， 如果进程添加了这些信号的处理函数，那么就不会产生coredump了。不过，对于SIGQUIT, SIGABRT, SIGFPE, SIGSEGV，有谁会为它们加上信号处理函数呢。<BR>
+<BR>
+ <BR>
+<BR>
+还有一种情况，进程并没有死锁或者block在某个位置， 但是我们需要在某个指定位置进行调试，获取某些变量或者其它信息。但是，有可能是客户环境或者生产环境，不允许我们进行长时间的检测。那么，我们就需要通 过coredump来获得进程在运行到该点时的快照。 这个时候，可以利用gdb来手工产生coredump。在attach上这个进程时，在指定位置打上断点，当断点触发时，使用gdb的命令gcore，可 以立即产生一个coredump。 这样，我们就拿到了这个位置的进程快照。<BR>
+<BR>
+ <BR>
+<BR>
+1．寻找您要发送信号的进程ID，<BR>
+<BR>
+ <BR>
+<BR>
+# ps -ef  | grep qemu<BR>
+<BR>
+root      3207  3206 44 10:32 pts/1    00:00:18 /usr/local/bin/qemu-system-x86<BR>
+<BR>
+得出 qemu-system-x86的 PID号是3207<BR>
+<BR>
+2．使用kill(1)去发送信号。<BR>
+<BR>
+ <BR>
+<BR>
+# /bin/kill -s QUIT 3207<BR>
+<BR>
+ <BR>
+<BR>
+发送其他的信号也很相似， 只要在命令行中替换QUIT 为ABRT，TERM 或 KILL 就行了<BR>
+<BR>
+ <BR>
+<BR>
+重要提示: 在系统上随意杀死进程是一个坏主意，特别是init(8)，它的PID是1，它非常特殊。 可以运行 /bin/kill -s KILL 1 命令来让系统迅速关机。  当您按下 Return （回车）键之前，一定要 详细检查您运行 kill(1) 时所指定的参数。<BR>
+<BR>
+ <BR>
+<BR>
+5 使用core dump进行调试<BR>
+<BR>
+在Linux下遇到“段错误”(segmentation fault)，如果段错误发生在服务器端，而服务器端要继续工作，不允许调试，这时“内核转储(core dump)”就派上了用场，可以把生成的内核转储复制到本地进行调试。<BR>
+<BR>
+    首先，按照上面的永久生效方法，在服务器上进行相应设置。 然后程序在崩溃时，就会在程序所在目录（或自己指定的目录）生成一个core文件，把这个core文件拷到本地(最好与该进程对应的可执行文件放到同一个目录，若不然，在gdb时指出路径也可以)。<BR>
+<BR>
+ <BR>
+<BR>
+具体方法如下：<BR>
+<BR>
+方法一：<BR>
+<BR>
+输入命令 #gdb &lt;程序可执行文件&gt; &lt;coredump转储文件&gt;<BR>
+<BR>
+例如：<BR>
+<BR>
+# gdb /usr/local/bin/qemu-system-x86_64  /var/core/core-3207-qemu-system-x86<BR>
+<BR>
+然后，在(gdb)提示符后输入 l,  会显示main主函数<BR>
+<BR>
+ <BR>
+<BR>
+ <BR>
+<BR>
+方法二：<BR>
+<BR>
+(1) 在终端输入命令# gdb [-c] &lt;coredump文件&gt;，<BR>
+<BR>
+例如： gdb -c /var/core/core-3207-qemu-system-x86<BR>
+<BR>
+(2)然后，在(gdb)提示符后输入file &lt;可执行程序&gt;<BR>
+<BR>
+例如：(gdb) file  /usr/local/bin/qemu-system-x86_64<BR>
+<BR>
+(3) 这时就可以用backtrace/thread等命令查看当时的错误了，就像程序在本地执行到崩溃点一样<BR>
+<BR>
+或者用where回车, 也可以显示程序在哪一行当掉的<BR>
+<BR>
+ <BR>
+<BR>
+5. 启用整个系统的内核转储<BR>
+<BR>
+(未完待续......)<BR>
+<BR>
+ <BR>
+<BR>
+(4.1) 编辑/etc/profile, 开启登录到系统的所有用户的内核转储功能<BR>
+<BR>
+首先，看看用的是个什么机器：<BR>
+<BR>
+# uname &#8211;a<BR>
+<BR>
+Linux ubuntu240 2.6.32-21-server #32-Ubuntu SMP Fri Apr 16 09:17:34 UTC 2010 x86_64 GNU/Linux<BR>
+<BR>
+其次，再查看一些默认参数，若core file size是0，即使程序出错时，也不会产生core文件。<BR>
+<BR>
+# ulimit -a<BR>
+<BR>
+core file size              (blocks, -c) unlimited<BR>
+<BR>
+data seg size              (kbytes, -d) unlimited<BR>
+<BR>
+scheduling priority               (-e) 20<BR>
+<BR>
+file size                  (blocks, -f) unlimited<BR>
+<BR>
+pending signals                  (-i) 16382<BR>
+<BR>
+max locked memory        (kbytes, -l) 64<BR>
+<BR>
+max memory size         (kbytes, -m) unlimited<BR>
+<BR>
+open files                      (-n) 1024<BR>
+<BR>
+pipe size              (512 bytes, -p) 8<BR>
+<BR>
+POSIX message queues     (bytes, -q) 819200<BR>
+<BR>
+real-time priority                (-r) 0<BR>
+<BR>
+stack size                (kbytes, -s) 8192<BR>
+<BR>
+cpu time                (seconds, -t) unlimited<BR>
+<BR>
+max user processes              (-u) unlimited<BR>
+<BR>
+virtual memory           (kbytes, -v) unlimited<BR>
+<BR>
+file locks                      (-x) unlimited<BR>
+<BR>
+ <BR>
+<BR>
+查看栈信息<BR>
+<BR>
+ <BR>
+<BR>
+      当程序被停住了，你需要做的第一件事就是查看程序是在哪里停住的。当你的程序调用了一个函数，函数的地址，函数参数，函数内的局部变量都会被压入“栈”（Stack）中。你可以用GDB命令来查看当前的栈中的信息。<BR>
+<BR>
+下面是一些查看函数调用栈信息的GDB命令：<BR>
+<BR>
+backtrace<BR>
+bt<BR>
+<BR>
+打印当前的函数调用栈的所有信息。如：<BR>
+<BR>
+(gdb) bt<BR>
+#0 func (n=250) at tst.c:6<BR>
+#1 0x08048524 in main (argc=1, argv=0xbffff674) at tst.c:30<BR>
+#2 0x400409ed in __libc_start_main () from /lib/libc.so.6<BR>
+<BR>
+从上可以看出函数的调用栈信息：__libc_start_main --&gt; main() --&gt; func()<BR>
+<BR>
+backtrace<BR>
+bt<BR>
+<BR>
+n是一个正整数，表示只打印栈顶上n层的栈信息。<BR>
+<BR>
+backtrace &lt;-n&gt;<BR>
+bt &lt;-n&gt;<BR>
+<BR>
+-n表一个负整数，表示只打印栈底下n层的栈信息。<BR>
+<BR>
+如果你要查看某一层的信息，你需要在切换当前的栈，一般来说，程序停止时，最顶层的栈就是当前栈，如果你要查看栈下面层的详细信息，首先要做的是切换当前栈。<BR>
+<BR>
+frame<BR>
+f<BR>
+<BR>
+n是一个从0开始的整数，是栈中的层编号。比如：frame 0，表示栈顶，frame 1，表示栈的第二层。<BR>
+<BR>
+up<BR>
+<BR>
+表示向栈的上面移动n层，可以不打n，表示向上移动一层。<BR>
+<BR>
+down<BR>
+<BR>
+表示向栈的下面移动n层，可以不打n，表示向下移动一层。<BR>
+<BR>
+上面的命令，都会打印出移动到的栈层的信息。如果你不想让其打出信息。你可以使用这三个命令：<BR>
+<BR>
+select-frame 对应于 frame 命令。<BR>
+up-silently 对应于 up 命令。<BR>
+down-silently 对应于 down 命令。<BR>
+<BR>
+查看当前栈层的信息，你可以用以下GDB命令：<BR>
+<BR>
+frame 或 f<BR>
+<BR>
+会打印出这些信息：栈的层编号，当前的函数名，函数参数值，函数所在文件及行号，函数执行到的语句。<BR>
+<BR>
+info frame<BR>
+info f<BR>
+<BR>
+      这个命令会打印出更为详细的当前栈层的信息，只不过，大多数都是运行时的内内地址。比如：函数地址，调用函数的地址，被调用函数的地址，目前的函数是由什么样的程序语言写成的、函数参数地址及值、局部变量的地址等等。如：<BR>
+<BR>
+(gdb) info f<BR>
+Stack level 0, frame at 0xbffff5d4:<BR>
+eip = 0x804845d in func (tst.c:6); saved eip 0x8048524<BR>
+called by frame at 0xbffff60c<BR>
+source language c.<BR>
+Arglist at 0xbffff5d4, args: n=250<BR>
+Locals at 0xbffff5d4, Previous frame's sp is 0x0<BR>
+Saved registers:<BR>
+ebp at 0xbffff5d4, eip at 0xbffff5d8<BR>
+<BR>
+<BR>
+info args<BR>
+打印出当前函数的参数名及其值。<BR>
+<BR>
+info locals<BR>
+打印出当前函数中所有局部变量及其值。<BR>
+<BR>
+info catch<BR>
+打印出当前的函数中的异常处理信息。<BR>
+<BR>
+<BR>
+http://my.oschina.net/u/219482/blog/313598
 </DD>
 </DL>
 
+</DD>
+<DT>安卓开发</DT>
+<!--property:date_created=1519356983-->
+<!--property:date_modified=1519356983-->
+<!--property:expanded-->
+<DD>
+<DL>
+<DT>优秀源码</DT>
+<!--property:date_created=1519356994-->
+<!--property:date_modified=1519435318-->
+<DD>
+9款开源不错的例子：https://www.cnblogs.com/Free-Thinker/p/6223126.html<BR>
+<BR>
+<BR>
+ijkplayer播放器https://www.jianshu.com/p/c5d972ab0309<BR>
+ijkplayer播放器C++详解<b>https://www.jianshu.com/p/daf0a61cc1e0</b>
+</DD>
+<DT>New node</DT>
+<!--property:date_created=1519442371-->
+<!--property:date_modified=1519442371-->
+</DL>
+
+</DD>
+<DT>远程桌面</DT>
+<!--property:date_created=1519442376-->
+<!--property:date_modified=1519442398-->
+<DD>
+windows远程 ubuntu ---&gt;&gt;&gt;https://www.linuxidc.com/Linux/2017-09/147112.htm
 </DD>
 <DT>RTSP</DT>
 <!--property:date_created=1516328752-->
