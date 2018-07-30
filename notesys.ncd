@@ -1,5 +1,5 @@
 <!DOCTYPE NoteCase-File>
-<!--LastNote:152-->
+<!--LastNote:149-->
 <HTML>
 <HEAD>
 <meta content="text/html;charset=UTF-8" http-equiv="Content-Type">
@@ -7973,7 +7973,6 @@ nc的控制参数不少，常用的几个参数如下所列：<BR>
 <DT>基础编程</DT>
 <!--property:date_created=1531897929-->
 <!--property:date_modified=1531897929-->
-<!--property:expanded-->
 <DD>
 <DL>
 <DT>字符串编程</DT>
@@ -16707,6 +16706,7 @@ Process.Start(psi);<BR>
 <DT>Qt</DT>
 <!--property:date_created=1520224018-->
 <!--property:date_modified=1520224018-->
+<!--property:expanded-->
 <DD>
 <DL>
 <DT>信号与曹</DT>
@@ -20124,6 +20124,39 @@ Q_UNUSED(arg1);<BR>
 在pro工程文件最后加入如下代码：<BR>
 QMAKE_CXXFLAGS +=  -Wno-unused-parameter
 </DD>
+<DT>截屏</DT>
+<!--property:date_created=1532857346-->
+<!--property:date_modified=1532857351-->
+<DD>
+MainWindow::MainWindow(QWidget *parent) :<BR>
+    QMainWindow(parent),<BR>
+    ui(new Ui::MainWindow),m_index(0)<BR>
+{<BR>
+    ui-&gt;setupUi(this);<BR>
+    m_pTimer = new QTimer;<BR>
+    m_pTimer-&gt;setInterval(1000/60);<BR>
+    connect(m_pTimer, SIGNAL(timeout()), this, SLOT(OnTimeSlot()));<BR>
+    m_pTimer-&gt;start();<BR>
+<BR>
+    m_pScreen = QGuiApplication::primaryScreen();<BR>
+}<BR>
+<BR>
+MainWindow::~MainWindow()<BR>
+{<BR>
+    delete ui;<BR>
+}<BR>
+<BR>
+void MainWindow::OnTimeSlot()<BR>
+{<BR>
+    //m_pix = QPixmap::grabWindow(QApplication::desktop()-&gt;winId());<BR>
+    double tEnd = clock();<BR>
+    m_pix = m_pScreen-&gt;grabWindow(0);<BR>
+    ui-&gt;labelShow-&gt;setPixmap(m_pix);<BR>
+    m_index++;<BR>
+    double tStart = clock();<BR>
+    qDebug() &lt;&lt; &quot;hello: &quot; &lt;&lt; m_index &lt;&lt; &quot; use: &quot; &lt;&lt; tStart - tEnd;<BR>
+}
+</DD>
 </DL>
 
 </DD>
@@ -20340,6 +20373,7 @@ rtsp://192.168.47.1/Titanic.mkv
 <DT>linux</DT>
 <!--property:date_created=1517816521-->
 <!--property:date_modified=1517816521-->
+<!--property:expanded-->
 <DD>
 <DL>
 <DT>第三方库连接</DT>
@@ -22552,13 +22586,290 @@ date -s &quot;2018-07-11 15:10:30&quot; &amp;&amp; hwclock -- systohc
 gcc export CC=/usr/local/bin/gcc   gcc执行程序全路径<BR>
 g++ export CXX=/usrl/g++   g++全路径
 </DD>
+<DT>ffmpeg</DT>
+<!--property:date_created=1532924942-->
+<!--property:date_modified=1532933839-->
+<DD>
+1.安装ffmpeg<BR>
+1.获取依赖包<BR>
+<BR>
+可以按照以下网址联网下载最新版本或者使用安装包里面的软件<BR>
+<BR>
+yasm<BR>
+wget http://www.tortall.net/projects/yasm/releases/yasm-1.3.0.tar.gz<BR>
+<BR>
+x264<BR>
+wget ftp://ftp.videolan.org/pub/x264/snapshots/last_x264.tar.bz2<BR>
+<BR>
+fdk-acc<BR>
+wget http://sourceforge.net/projects/opencore-amr/files/fdk-aac/<BR>
+wget https://sourceforge.net/projects/opencore-amr/files/fdk-aac/fdk-aac-0.1.6.tar.gz<BR>
+<BR>
+ame<BR>
+wget http://ufpr.dl.sourceforge.net/project/lame/lame/3.99/lame-3.99.5.tar.gz<BR>
+<BR>
+opus<BR>
+wget http://downloads.xiph.org/releases/opus/opus-1.1.tar.gz<BR>
+<BR>
+ogg<BR>
+wget http://downloads.xiph.org/releases/ogg/libogg-1.3.2.tar.gz<BR>
+<BR>
+vorbis<BR>
+wget http://downloads.xiph.org/releases/vorbis/libvorbis-1.3.5.tar.gz<BR>
+<BR>
+libvpx<BR>
+wget git clone https://github.com/webmproject/libvpx.git<BR>
+<BR>
+xvidcore<BR>
+wget http://downloads.xvid.org/downloads/xvidcore-1.3.4.tar.gz<BR>
+<BR>
+libtheora<BR>
+wget http://downloads.xiph.org/releases/theora/libtheora-1.1.1.tar.gz<BR>
+<BR>
+ <BR>
+2.安装依赖包<BR>
+Yasm<BR>
+<BR>
+tar zxvf yasm-1.3.0.tar.gz<BR>
+<BR>
+cd yasm-1.3.0<BR>
+<BR>
+./configure --prefix=/home/ffmpeg_builder --bindir=/usr/bin<BR>
+<BR>
+make &amp;&amp; make install<BR>
+<BR>
+ <BR>
+x264<BR>
+<BR>
+tar axf last_x264.tar.bz2<BR>
+<BR>
+cd last_x264<BR>
+<BR>
+./configure \<BR>
+<BR>
+--prefix=/home/ffmpeg_builder \<BR>
+<BR>
+--bindir=/usr/bin \<BR>
+<BR>
+--enable-shared<BR>
+<BR>
+make &amp;&amp; make install<BR>
+<BR>
+ <BR>
+fdk-acc<BR>
+<BR>
+tar zxvf fdk-aac-0.1.4.tar.gz<BR>
+<BR>
+cd fdk-aac-0.1.4<BR>
+<BR>
+autoreconf -fiv<BR>
+<BR>
+./configure --prefix=/home/ffmpeg_builder --enable-shared<BR>
+<BR>
+make &amp;&amp; make install<BR>
+<BR>
+ <BR>
+Lame<BR>
+<BR>
+tar zxvf lame-3.99.5.tar.gz<BR>
+<BR>
+cd tar zxvf lame-3.99.5<BR>
+<BR>
+./configure --prefix=/home/ffmpeg_builder --bindir=/usr/bin --disable-shared --enable-nasm<BR>
+<BR>
+make &amp;&amp; make install<BR>
+<BR>
+ <BR>
+Opus<BR>
+<BR>
+tar zxvf opus-1.1.tar.gz<BR>
+<BR>
+cd opus-1.1<BR>
+<BR>
+autoreconf -fiv<BR>
+<BR>
+./configure --prefix=/home/ffmpeg_builder --disable-shared<BR>
+<BR>
+make &amp;&amp; make install<BR>
+<BR>
+ <BR>
+ogg<BR>
+<BR>
+tar zxvf libogg-1.3.2.tar.gz<BR>
+<BR>
+cd tar zxvf libogg-1.3.2<BR>
+<BR>
+./configure --prefix=home/ffmpeg_builder --disable-shared<BR>
+<BR>
+make &amp;&amp; make install<BR>
+<BR>
+ <BR>
+vorbis<BR>
+<BR>
+tar zxvf libvorbis-1.3.5.tar.gz<BR>
+<BR>
+cd libvorbis-1.3.5<BR>
+<BR>
+./configure --prefix=/home/ffmpeg_builder --with-ogg=/home/ffmpeg_builder --disable-shared<BR>
+<BR>
+make &amp;&amp; make install<BR>
+<BR>
+ <BR>
+Libvpx<BR>
+<BR>
+cd libvpx<BR>
+<BR>
+./configure --prefix=/home/ffmpeg_builder --disable-examples<BR>
+<BR>
+make &amp;&amp; make install<BR>
+<BR>
+ <BR>
+Xvidcore<BR>
+<BR>
+tar zxvf xvidcore-1.3.4.tar.gz<BR>
+<BR>
+cd xvidcore/build/generic/<BR>
+<BR>
+./configure --prefix=/home/ffmpeg_builder<BR>
+<BR>
+make &amp;&amp; make install<BR>
+<BR>
+ <BR>
+Libtheora<BR>
+<BR>
+tar zxvf libtheora-1.1.1.tar.gz<BR>
+<BR>
+cd libtheora-1.1.1<BR>
+<BR>
+./configure --prefix=/home/ffmpeg_builder --with-ogg=/home/ffmpeg_builder --disable-examples --disable-shared --disable-sdltest --disable-vorbistest<BR>
+<BR>
+make &amp;&amp; make install<BR>
+<BR>
+ <BR>
+Freetype<BR>
+<BR>
+tar zxvf freetype-2.3.5.tar.gz <BR>
+<BR>
+cd  freetype-2.3.5<BR>
+<BR>
+./configure --prefix=/home/ffmpeg_builder<BR>
+<BR>
+make &amp;&amp; make install<BR>
+<BR>
+ <BR>
+3.安装ffmpeg<BR>
+<BR>
+tar axf ffmpeg-2.7.2.tar.bz2<BR>
+<BR>
+cd ffmpeg-2.7.2<BR>
+<BR>
+export PKG_CONFIG_PATH=/home/ffmpeg_builder/lib/pkgconfig<BR>
+<BR>
+ <BR>
+<BR>
+CFLAGS=&quot;-fPIC -m64&quot; ./configure \<BR>
+--prefix=/home/ffmpeg \<BR>
+--extra-cflags=&quot;-I/home/ffmpeg_builder/include&quot; \<BR>
+--extra-ldflags=&quot;-L/home/ffmpeg_builder/lib&quot; \<BR>
+--extra-libs=-ldl \<BR>
+--bindir=/usr/bin \<BR>
+--enable-version3 \<BR>
+--enable-zlib \<BR>
+--enable-bzlib \<BR>
+--enable-pic \<BR>
+--enable-gpl \<BR>
+--enable-nonfree \<BR>
+--enable-pthreads \<BR>
+--enable-libfdk_aac \<BR>
+--enable-libfreetype \<BR>
+--enable-libmp3lame \<BR>
+--enable-libopus \<BR>
+--enable-libvorbis \<BR>
+--enable-libvpx \<BR>
+--enable-libx264<BR>
+<BR>
+CFLAGS=&quot;-fPIC -m64&quot; ./configure \<BR>
+--prefix=/home/ffmpeg \<BR>
+--bindir=/usr/bin \<BR>
+--enable-version3 \<BR>
+--enable-zlib \<BR>
+--enable-bzlib \<BR>
+--enable-pic \<BR>
+--enable-gpl \<BR>
+--enable-nonfree \<BR>
+--enable-pthreads \<BR>
+--enable-libfdk_aac \<BR>
+--enable-libfreetype \<BR>
+--enable-libvorbis \<BR>
+--enable-libvpx \<BR>
+--enable-libx264<BR>
+<BR>
+CFLAGS=&quot;-fPIC -m64&quot; ./configure --prefix=/home/ffmpeg \<BR>
+--enable-shared \<BR>
+--enable-libfdk-aac \<BR>
+--enable-gpl \<BR>
+--enable-nonfree \<BR>
+--enable-postproc \<BR>
+--enable-avfilter \<BR>
+--enable-pthreads \<BR>
+--enable-libx264 \<BR>
+--enable-libxvid \<BR>
+--enable-decoder=libx264 \<BR>
+--enable-encoder=libx264<BR>
+<BR>
+ <BR>
+<BR>
+此处出现问题，请访问http://rickie622.blog.163.com/blog/static/212388112014113125836773/尝试解决<BR>
+<BR>
+确认Makefile中指定的config.mak（在ffmpeg根目录下）中：CONFIG_FFPLAY=yes，用来生成ffplay<BR>
+<BR>
+<BR>
+make &amp;&amp; make install<BR>
+<BR>
+ <BR>
+4.验证是否安装成功<BR>
+<BR>
+ffmpeg -version<BR>
+<BR>
+ <BR>
+<BR>
+ <BR>
+<BR>
+如果报如下类似错误<BR>
+<BR>
+ ffmpeg: error while loading shared libraries: libx264.so.146: cannot open shared object file: No such file or directory<BR>
+<BR>
+解决办法是:<BR>
+<BR>
+ vi /etc/ld.so.conf<BR>
+<BR>
+将 /usr/local/cellar/ffmpeg_build/lib 加到ld.so.conf文件末尾<BR>
+<BR>
+然后执行命令:<BR>
+<BR>
+Ldconfig<BR>
+<BR>
+ <BR>
+5.编译ffmpeg<BR>
+<BR>
+ <BR>
+<BR>
+1.out:<BR>
+<BR>
+g++ testCode.cc -o main.out -L&quot;/usr/local/cellar/ffmpeg/lib&quot; -L&quot;/usr/local/cellar/ffmpeg_build/lib&quot; -I&quot;/usr/local/cellar/ffmpeg/include&quot; -I&quot;/usr/local/cellar/ffmpeg_build/include&quot;  -lavformat -lavdevice -lavcodec -lavutil -lavfilter -lpostproc -lswresample -lswscale  -lSDL -lxvidcore -lx264 -lpthread -ltheora -ltheoraenc -ltheoradec -lvorbis -lvorbisenc -lvpx -lopus -logg -lmp3lame -lfdk-aac -lm  -lz -lpthread -lrt<BR>
+<BR>
+ <BR>
+<BR>
+1.问题:ffmpeg: 'UINT64_C' was not declared in this scope<BR>
+<BR>
+http://blog.csdn.net/beitiandijun/article/details/19156175
+</DD>
 </DL>
 
 </DD>
 <DT>windows</DT>
 <!--property:date_created=1530565738-->
 <!--property:date_modified=1530565738-->
-<!--property:expanded-->
 <DD>
 <DL>
 <DT>查看wifi密码</DT>
@@ -22599,9 +22910,10 @@ bjam stage --toolset=msvc-14.0 --without-graph --without-graph_parallel --withou
 </DD>
 <DT>时间获取</DT>
 <!--property:date_created=1532854765-->
-<!--property:date_modified=1532854793-->
+<!--property:date_modified=1532856043-->
 <DD>
-       time_t dateStart = time(NULL);<BR>
+//////////////////////////////////////////////////////////////////////////////////////////////////////     <BR>
+  time_t dateStart = time(NULL);<BR>
         time_t dateEnd = time(NULL);<BR>
 <BR>
         dateStart -= 10000;<BR>
@@ -22622,12 +22934,41 @@ bjam stage --toolset=msvc-14.0 --without-graph --without-graph_parallel --withou
 <BR>
 <BR>
 <BR>
-<BR>
+//////////////////////////////////////////////////////////////////////////////////////////////////////<BR>
 	double start, end;<BR>
 	start = clock();<BR>
 	ExecuteWithNotThread();<BR>
 	end = clock();<BR>
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////<BR>
+ #include &lt;QDebug&gt;  <BR>
+#include &lt;QTime&gt;  <BR>
+QTime time;  <BR>
+time.start();  <BR>
+function();  <BR>
+qDebug()&lt;&lt;time.elapsed()/1000.0&lt;&lt;&quot;s&quot;; <BR>
+//////////////////////////////////////////////////////////////////////////////////////////////////////<BR>
+     #include &lt;QDebug&gt;  <BR>
+    #include &lt;sys/time.h&gt;  <BR>
+      <BR>
+    struct timeval tpstart,tpend;  <BR>
+    float timeuse;  <BR>
+      <BR>
+    gettimeofday(&amp;tpstart,NULL);  <BR>
+    function();  <BR>
+    gettimeofday(&amp;tpend,NULL);  <BR>
+    timeuse=(1000000*(tpend.tv_sec-tpstart.tv_sec) + tpend.tv_usec-tpstart.tv_usec)/1000000.0;  <BR>
+      <BR>
+    qDebug()&lt;&lt;timeuse&lt;&lt;&quot;s&quot;;  <BR>
+<BR>
+//////////////////////////////////////////////////////////////////////////////////////////////////////<BR>
+     #include &lt;QDebug&gt;  <BR>
+    #include &lt;sys/time.h&gt;  <BR>
+      <BR>
+    double time_Start = (double)clock();  <BR>
+    function();  <BR>
+    double time_End = (double)clock();  <BR>
+          <BR>
+    qDebug()&lt;&lt;(time_End - time_Start)/1000.0&lt;&lt;&quot;s&quot;;  
 </DD>
 </DL>
 
